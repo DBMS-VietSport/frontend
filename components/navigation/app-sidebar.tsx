@@ -18,16 +18,17 @@ import {
   BarChart3,
 } from "lucide-react";
 
-import { NavMain } from "@/components/nav-main";
-import { NavProjects } from "@/components/nav-projects";
-import { NavUser } from "@/components/nav-user";
-import { TeamSwitcher } from "@/components/team-switcher";
+import { NavMain } from "@/components/navigation/nav-main";
+import { NavProjects } from "@/components/navigation/nav-projects";
+import { NavUser } from "@/components/navigation/nav-user";
+import { TeamSwitcher } from "@/components/navigation/team-switcher";
 import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
   SidebarHeader,
   SidebarRail,
+  SidebarTrigger,
 } from "@/components/ui/sidebar";
 
 // This is sample data.
@@ -159,7 +160,12 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
-        <TeamSwitcher teams={data.teams} />
+        <div className="flex items-center gap-2">
+          <TeamSwitcher teams={data.teams} />
+          <div className="hidden group-data-[collapsible=]:block">
+            <SidebarTrigger className="ml-auto" />
+          </div>
+        </div>
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={data.navMain} />
