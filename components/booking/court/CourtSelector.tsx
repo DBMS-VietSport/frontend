@@ -3,8 +3,8 @@
 import * as React from "react";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
-import { mockCourts } from "./mockData";
-import type { Court } from "./types";
+import { mockCourts } from "../mockData";
+import type { Court } from "../types";
 
 interface CourtSelectorProps {
   courtTypeId: string;

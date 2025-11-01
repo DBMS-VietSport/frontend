@@ -11,7 +11,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Minus, Plus, ImageIcon } from "lucide-react";
-import type { ServiceItem } from "./types";
+import type { ServiceItem } from "../types";
 
 interface ServiceCategorySectionProps {
   items: ServiceItem[];

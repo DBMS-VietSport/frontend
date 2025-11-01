@@ -21,9 +21,9 @@ import { CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
 import { vi } from "date-fns/locale";
 import { cn } from "@/lib/utils";
-import { mockCities, mockFacilities, mockCourtTypes } from "./mockData";
+import { mockCities, mockFacilities, mockCourtTypes } from "../mockData";
 
-interface ScheduleFilterProps {
+interface CourtBookingFilterProps {
   onFilterChange: (filters: {
     cityId: string;
     facilityId: string;
@@ -32,7 +32,9 @@ interface ScheduleFilterProps {
   }) => void;
 }
 
-export function ScheduleFilter({ onFilterChange }: ScheduleFilterProps) {
+export function CourtBookingFilter({
+  onFilterChange,
+}: CourtBookingFilterProps) {
   const [date, setDate] = React.useState<Date>(new Date());
   const [cityId, setCityId] = React.useState<string>("");
   const [facilityId, setFacilityId] = React.useState<string>("");

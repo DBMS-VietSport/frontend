@@ -2,9 +2,11 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { ServiceBookingForm } from "@/components/booking/ServiceBookingForm";
-import { ServiceSummaryCard } from "@/components/booking/ServiceSummaryCard";
-import { BookingProgress } from "@/components/booking/BookingProgress";
+import {
+  ServiceBookingForm,
+  ServiceSummaryCard,
+  BookingProgress,
+} from "@/components/booking";
 import { Separator } from "@/components/ui/separator";
 import { mockServiceItems, mockCoaches } from "@/components/booking/mockData";
 import { mockCourts, mockCourtTypes } from "@/components/booking/mockData";

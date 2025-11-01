@@ -7,9 +7,9 @@ import { Separator } from "@/components/ui/separator";
 import { format } from "date-fns";
 import { vi } from "date-fns/locale";
 import { ArrowRight, Calendar, Clock, MapPin, DollarSign } from "lucide-react";
-import type { TimeSlot, Court, CourtType } from "./types";
+import type { TimeSlot, Court, CourtType } from "../types";
 
-interface BookingSummaryCardProps {
+interface CourtBookingSummaryCardProps {
   date: Date;
   timeSlots: TimeSlot[];
   court: Court;
@@ -18,14 +18,14 @@ interface BookingSummaryCardProps {
   onContinue: () => void;
 }
 
-export function BookingSummaryCard({
+export function CourtBookingSummaryCard({
   date,
   timeSlots,
   court,
   courtType,
   pricePerHour = 50000,
   onContinue,
-}: BookingSummaryCardProps) {
+}: CourtBookingSummaryCardProps) {
   const duration = courtType.slotDuration / 60; // hours per slot
   const totalSlots = timeSlots.length;
   const totalPrice = pricePerHour * duration * totalSlots;

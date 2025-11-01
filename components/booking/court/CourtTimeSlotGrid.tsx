@@ -17,10 +17,10 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
-import { generateTimeSlots } from "./mockData";
-import type { Court, CourtType, TimeSlot } from "./types";
+import { generateTimeSlots } from "../mockData";
+import type { Court, CourtType, TimeSlot } from "../types";
 
-interface TimeSlotGridProps {
+interface CourtTimeSlotGridProps {
   court: Court | null;
   courtType: CourtType | null;
   selectedDate: Date;
@@ -29,14 +29,14 @@ interface TimeSlotGridProps {
   onSlotSelect: (slot: TimeSlot) => void;
 }
 
-export function TimeSlotGrid({
+export function CourtTimeSlotGrid({
   court,
   courtType,
   selectedDate,
   selectedSlots = [],
   isEmployee = false,
   onSlotSelect,
-}: TimeSlotGridProps) {
+}: CourtTimeSlotGridProps) {
   const [dialogSlot, setDialogSlot] = React.useState<TimeSlot | null>(null);
   const [dialogOpen, setDialogOpen] = React.useState(false);
 

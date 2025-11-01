@@ -64,12 +64,12 @@ const data = {
     },
     {
       title: "Quản lý đặt sân",
-      url: "/booking/schedule",
+      url: "/booking/court",
       icon: Calendar,
       items: [
         {
           title: "Đặt sân",
-          url: "/booking/court-booking",
+          url: "/booking/court",
         },
         {
           title: "Danh sách đặt sân",

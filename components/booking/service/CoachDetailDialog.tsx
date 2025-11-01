@@ -12,7 +12,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { GraduationCap, Users, Award } from "lucide-react";
-import type { Coach } from "./types";
+import type { Coach } from "../types";
 
 interface CoachDetailDialogProps {
   coach: Coach | null;

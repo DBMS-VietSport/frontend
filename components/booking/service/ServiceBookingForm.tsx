@@ -21,7 +21,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Minus, Plus, Info } from "lucide-react";
-import type { ServiceItem, Coach } from "./types";
+import type { ServiceItem, Coach } from "../types";
 
 interface ServiceBookingFormProps {
   services: ServiceItem[];

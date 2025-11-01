@@ -7,7 +7,7 @@ import { Separator } from "@/components/ui/separator";
 import { format } from "date-fns";
 import { vi } from "date-fns/locale";
 import { ArrowRight, Calendar, Clock, MapPin, DollarSign } from "lucide-react";
-import type { TimeSlot, Court, CourtType, ServiceItem, Coach } from "./types";
+import type { TimeSlot, Court, CourtType, ServiceItem, Coach } from "../types";
 
 interface ServiceSummaryCardProps {
   date: Date;
