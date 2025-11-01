@@ -46,3 +46,35 @@ export interface BookingDetails {
   courtType: CourtType;
   pricePerHour: number;
 }
+
+// Service booking interfaces
+export interface ServiceItem {
+  id: string;
+  name: string;
+  category: "equipment" | "coach" | "facility" | "drink";
+  price: number;
+  unit: "hour" | "turn" | "free";
+  quantity: number;
+  durationHours?: number;
+  imageUrl?: string;
+  description?: string;
+}
+
+export interface Coach {
+  id: string;
+  name: string;
+  sport: string;
+  pricePerHour: number;
+  quantity: number;
+  durationHours?: number;
+  avatarUrl?: string;
+  degree?: string;
+  bio?: string;
+  studentsTrained?: number;
+  expertise?: string[];
+}
+
+export interface ServiceBooking {
+  items: ServiceItem[];
+  coaches: Coach[];
+}
