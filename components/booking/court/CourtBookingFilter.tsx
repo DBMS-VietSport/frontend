@@ -103,7 +103,7 @@ export function CourtBookingFilter({
         <div className="space-y-2">
           <Label htmlFor="city">Tỉnh thành</Label>
           <Select value={cityId} onValueChange={handleCityChange}>
-            <SelectTrigger id="city" className="w-full">
+            <SelectTrigger id="city">
               <SelectValue placeholder="Chọn tỉnh thành" />
             </SelectTrigger>
             <SelectContent>
@@ -124,7 +124,7 @@ export function CourtBookingFilter({
             onValueChange={handleFacilityChange}
             disabled={!cityId}
           >
-            <SelectTrigger id="facility" className="w-full">
+            <SelectTrigger id="facility">
               <SelectValue placeholder="Chọn cơ sở" />
             </SelectTrigger>
             <SelectContent>
@@ -145,7 +145,7 @@ export function CourtBookingFilter({
             onValueChange={setCourtTypeId}
             disabled={!cityId || !facilityId}
           >
-            <SelectTrigger id="courtType" className="w-full">
+            <SelectTrigger id="courtType">
               <SelectValue placeholder="Chọn loại sân" />
             </SelectTrigger>
             <SelectContent>

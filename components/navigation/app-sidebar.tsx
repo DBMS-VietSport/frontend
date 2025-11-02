@@ -64,7 +64,7 @@ const data = {
     },
     {
       title: "Quản lý đặt sân",
-      url: "/booking/court",
+      url: "/booking/manage",
       icon: Calendar,
       items: [
         {
@@ -73,7 +73,7 @@ const data = {
         },
         {
           title: "Danh sách đặt sân",
-          url: "/booking/schedule",
+          url: "/booking/manage",
         },
       ],
     },

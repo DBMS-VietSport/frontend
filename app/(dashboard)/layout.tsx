@@ -28,7 +28,7 @@ export default function DashboardLayout({
     <SidebarProvider>
       <AppSidebar />
       <SidebarInset>
-        <div className="flex flex-1 flex-col gap-4 p-4">{children}</div>
+        <div className=" flex flex-1 flex-col gap-4 px-10 py-5">{children}</div>
       </SidebarInset>
     </SidebarProvider>
   );

@@ -28,3 +28,11 @@ export { PaymentSummaryCard } from "./payment/PaymentSummaryCard";
 export { BankTransferPanel } from "./payment/BankTransferPanel";
 export { CounterPaymentPanel } from "./payment/CounterPaymentPanel";
 export { CountdownBadge } from "./payment/CountdownBadge";
+
+// Export booking management components
+export { FilterBar } from "./manage/FilterBar";
+export { BookingTable } from "./manage/BookingTable";
+export { BookingDetailDialog } from "./manage/BookingDetailDialog";
+export { CourtTimeEditor } from "./manage/CourtTimeEditor";
+export { ServiceEditor } from "./manage/ServiceEditor";
+export { InvoiceRecalcPanel } from "./manage/InvoiceRecalcPanel";
