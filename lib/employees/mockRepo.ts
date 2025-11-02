@@ -338,3 +338,4 @@ export async function getPerformanceStats(
 
 // Export mock data for direct access
 export { mockRoles };
+export { mockEmployees };

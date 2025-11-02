@@ -104,7 +104,7 @@ const data = {
     },
     {
       title: "Quản lý sân bãi",
-      url: "/fields",
+      url: "/courts",
       icon: MapPin,
     },
     {
