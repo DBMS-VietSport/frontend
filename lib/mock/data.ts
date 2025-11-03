@@ -1,0 +1,432 @@
+import { nextGuid } from "./id-utils";
+import type {
+  Role,
+  CustomerLevel,
+  Branch,
+  CourtType,
+  Court,
+  Service,
+  BranchService,
+  Account,
+  Employee,
+  Customer,
+  CourtBooking,
+  BookingSlot,
+  ServiceBooking,
+  ServiceBookingItem,
+  Invoice,
+  WorkShift,
+  ShiftAssignment,
+} from "./types";
+
+export const roles: Role[] = [
+  { id: 1, name: "Quản lý" },
+  { id: 2, name: "Lễ tân" },
+  { id: 3, name: "Kỹ thuật" },
+  { id: 4, name: "Thu ngân" },
+  { id: 5, name: "Khách hàng/Member" },
+  { id: 6, name: "Quản trị hệ thống" },
+];
+
+export const customerLevels: CustomerLevel[] = [
+  { id: 1, name: "Platinum", discount_rate: 0.2, minimum_point: 1000 },
+  { id: 2, name: "Gold", discount_rate: 0.1, minimum_point: 500 },
+  { id: 3, name: "Silver", discount_rate: 0.05, minimum_point: 100 },
+  { id: 4, name: "Thường", discount_rate: 0, minimum_point: 0 },
+];
+
+export const branches: Branch[] = [
+  {
+    id: 1,
+    name: "VietSport TP.HCM",
+    address: "Quận 10, TP.HCM",
+    hotline: "0901234567",
+    late_time_limit: 15,
+  },
+  {
+    id: 2,
+    name: "VietSport Hà Nội",
+    address: "Cầu Giấy, Hà Nội",
+    hotline: "0249876543",
+    late_time_limit: 15,
+  },
+  {
+    id: 3,
+    name: "VietSport Cần Thơ",
+    address: "Ninh Kiều, Cần Thơ",
+    hotline: "0123456788",
+    late_time_limit: 15,
+  },
+  {
+    id: 4,
+    name: "VietSport Đà Nẵng",
+    address: "Hải Châu, Đà Nẵng",
+    hotline: "0236123456",
+    late_time_limit: 15,
+  },
+];
+
+export const courtTypes: CourtType[] = [
+  { id: 1, name: "Sân Cầu Lông", rent_duration: 60 },
+  { id: 2, name: "Sân Bóng Rổ", rent_duration: 60 },
+  { id: 3, name: "Sân Tennis", rent_duration: 120 },
+  { id: 4, name: "Sân Bóng Đá Mini", rent_duration: 90 },
+  { id: 5, name: "Sân Futsal", rent_duration: 90 },
+];
+
+export const courts: Court[] = [
+  {
+    id: 1,
+    status: "Available",
+    capacity: 4,
+    base_hourly_price: 150000,
+    maintenance_date: "2025-10-30",
+    branch_id: 1,
+    court_type_id: 1,
+    display_name: "Cầu lông HCM 1",
+  },
+  {
+    id: 2,
+    status: "InUse",
+    capacity: 10,
+    base_hourly_price: 300000,
+    maintenance_date: "2025-11-01",
+    branch_id: 1,
+    court_type_id: 5,
+    display_name: "Futsal HCM 1",
+  },
+  {
+    id: 3,
+    status: "Available",
+    capacity: 4,
+    base_hourly_price: 140000,
+    maintenance_date: "2025-10-30",
+    branch_id: 3,
+    court_type_id: 1,
+    display_name: "Cầu lông CT 1",
+  },
+  {
+    id: 4,
+    status: "Maintenance",
+    capacity: 4,
+    base_hourly_price: 160000,
+    maintenance_date: "2025-11-05",
+    branch_id: 2,
+    court_type_id: 2,
+    display_name: "Bóng rổ HN 1",
+  },
+  {
+    id: 5,
+    status: "Available",
+    capacity: 2,
+    base_hourly_price: 200000,
+    maintenance_date: "2025-11-07",
+    branch_id: 4,
+    court_type_id: 3,
+    display_name: "Tennis ĐN 1",
+  },
+  {
+    id: 6,
+    status: "Available",
+    capacity: 14,
+    base_hourly_price: 350000,
+    maintenance_date: "2025-11-10",
+    branch_id: 2,
+    court_type_id: 4,
+    display_name: "Bóng đá mini HN 1",
+  },
+];
+
+export const services: Service[] = [
+  { id: 1, name: "Thuê Bóng Đá", unit: "Lần", rental_type: "Dụng cụ" },
+  { id: 2, name: "Thuê Vợt Cầu Lông", unit: "Lần", rental_type: "Dụng cụ" },
+  {
+    id: 3,
+    name: "Huấn Luyện Viên Cá Nhân",
+    unit: "Giờ",
+    rental_type: "Nhân sự",
+  },
+  { id: 4, name: "Phòng Tắm VIP", unit: "Lượt", rental_type: "Tiện ích" },
+  { id: 5, name: "Tủ Đồ Cá Nhân", unit: "Tháng", rental_type: "Tiện ích" },
+  { id: 6, name: "Thuê Trọng Tài", unit: "Trận", rental_type: "Nhân sự" },
+  { id: 7, name: "Nước suối Aquafina", unit: "Chai", rental_type: "Tiện ích" },
+  { id: 8, name: "7 Up", unit: "Chai", rental_type: "Tiện ích" },
+  { id: 9, name: "Thuê Áo Bib", unit: "Lần", rental_type: "Dụng cụ" },
+];
+
+export const branchServices: BranchService[] = [
+  {
+    id: 1,
+    unit_price: 20000,
+    current_stock: 50,
+    min_stock_threshold: 10,
+    status: "Available",
+    branch_id: 1,
+    service_id: 1,
+  },
+  {
+    id: 2,
+    unit_price: 150000,
+    current_stock: 20,
+    min_stock_threshold: 5,
+    status: "Available",
+    branch_id: 1,
+    service_id: 5,
+  },
+  {
+    id: 3,
+    unit_price: 15000,
+    current_stock: 40,
+    min_stock_threshold: 5,
+    status: "Available",
+    branch_id: 3,
+    service_id: 1,
+  },
+  {
+    id: 4,
+    unit_price: 130000,
+    current_stock: 30,
+    min_stock_threshold: 5,
+    status: "Available",
+    branch_id: 3,
+    service_id: 5,
+  },
+  {
+    id: 5,
+    unit_price: 10000,
+    current_stock: 100,
+    min_stock_threshold: 15,
+    status: "Available",
+    branch_id: 2,
+    service_id: 7,
+  },
+  {
+    id: 6,
+    unit_price: 10000,
+    current_stock: 80,
+    min_stock_threshold: 15,
+    status: "Available",
+    branch_id: 2,
+    service_id: 8,
+  },
+];
+
+export const accounts: Account[] = [
+  { id: nextGuid(), username: "manager1", role_id: 1 },
+  { id: nextGuid(), username: "reception1", role_id: 2 },
+  { id: nextGuid(), username: "coach1", role_id: 2 },
+];
+
+export const employees: Employee[] = [
+  {
+    id: 1,
+    full_name: "Nguyễn Văn A",
+    gender: "Nam",
+    dob: "1990-01-01",
+    address: "TP.HCM",
+    phone_number: "0900000001",
+    email: "a@vs.com",
+    status: "Active",
+    commission_rate: 0.1,
+    base_salary: 8000000,
+    base_allowance: 1000000,
+    branch_id: 1,
+    user_id: accounts[0].id,
+    role_id: 1,
+  },
+  {
+    id: 2,
+    full_name: "Trần Thị B",
+    gender: "Nữ",
+    dob: "1995-05-10",
+    address: "Hà Nội",
+    phone_number: "0900000002",
+    email: "b@vs.com",
+    status: "Active",
+    commission_rate: 0.05,
+    base_salary: 6000000,
+    base_allowance: 500000,
+    branch_id: 2,
+    user_id: accounts[1].id,
+    role_id: 2,
+  },
+  {
+    id: 3,
+    full_name: "Phạm HLV Cầu Lông",
+    gender: "Nam",
+    dob: "1992-03-03",
+    address: "Cần Thơ",
+    phone_number: "0900000003",
+    email: "coach@vs.com",
+    status: "Active",
+    commission_rate: 0.15,
+    base_salary: 7000000,
+    base_allowance: 700000,
+    branch_id: 3,
+    user_id: accounts[2].id,
+    role_id: 2,
+  },
+];
+
+export const customers: Customer[] = [
+  {
+    id: 1,
+    full_name: "Lê Minh",
+    dob: "1998-06-06",
+    gender: "Nam",
+    id_card_number: "012345678",
+    address: "TP.HCM",
+    phone_number: "0911111111",
+    email: "minh@vs.com",
+    customer_level_id: 4,
+    user_id: nextGuid(),
+    bonus_point: 50,
+  },
+  {
+    id: 2,
+    full_name: "Ngô Hoa",
+    dob: "1997-02-14",
+    gender: "Nữ",
+    id_card_number: "987654321",
+    address: "Hà Nội",
+    phone_number: "0922222222",
+    email: "hoa@vs.com",
+    customer_level_id: 3,
+    user_id: nextGuid(),
+    bonus_point: 180,
+  },
+  {
+    id: 3,
+    full_name: "Trương Khang",
+    dob: "1995-08-20",
+    gender: "Nam",
+    id_card_number: "111222333",
+    address: "Cần Thơ",
+    phone_number: "0933333333",
+    email: "khang@vs.com",
+    customer_level_id: 2,
+    user_id: nextGuid(),
+    bonus_point: 620,
+  },
+];
+
+export const courtBookings: CourtBooking[] = [
+  {
+    id: 1,
+    created_at: "2025-10-20T08:00:00Z",
+    type: "Direct",
+    status: "Paid",
+    customer_id: 1,
+    employee_id: 1,
+    court_id: 1,
+  },
+  {
+    id: 2,
+    created_at: "2025-10-21T09:00:00Z",
+    type: "Direct",
+    status: "Pending",
+    customer_id: 2,
+    employee_id: 2,
+    court_id: 3,
+  },
+  {
+    id: 3,
+    created_at: "2025-10-22T10:00:00Z",
+    type: "Online",
+    status: "Pending",
+    customer_id: 3,
+    employee_id: null,
+    court_id: 4,
+  },
+];
+
+export const bookingSlots: BookingSlot[] = [
+  {
+    id: 1,
+    start_time: "2025-10-20T10:00:00Z",
+    end_time: "2025-10-20T11:00:00Z",
+    status: "Confirmed",
+    court_booking_id: 1,
+  },
+  {
+    id: 2,
+    start_time: "2025-10-21T10:00:00Z",
+    end_time: "2025-10-21T11:00:00Z",
+    status: "Confirmed",
+    court_booking_id: 2,
+  },
+  {
+    id: 3,
+    start_time: "2025-10-22T10:00:00Z",
+    end_time: "2025-10-22T11:30:00Z",
+    status: "Pending",
+    court_booking_id: 3,
+  },
+];
+
+export const serviceBookings: ServiceBooking[] = [
+  { id: 1, status: "Completed", court_booking_id: 1, employee_id: 1 },
+  { id: 2, status: "Pending", court_booking_id: 2, employee_id: 2 },
+];
+
+export const serviceBookingItems: ServiceBookingItem[] = [
+  {
+    id: 1,
+    quantity: 1,
+    start_time: "2025-10-20T10:00:00Z",
+    end_time: "2025-10-20T11:00:00Z",
+    service_booking_id: 1,
+    branch_service_id: 1,
+  },
+  {
+    id: 2,
+    quantity: 2,
+    start_time: "2025-10-21T10:00:00Z",
+    end_time: "2025-10-21T11:00:00Z",
+    service_booking_id: 2,
+    branch_service_id: 5,
+  },
+];
+
+export const invoices: Invoice[] = [
+  {
+    id: 1,
+    total_amount: 350000,
+    payment_method: "Cash",
+    status: "Paid",
+    created_at: "2025-10-20T11:30:00Z",
+    court_booking_id: 1,
+    service_booking_id: 1,
+  },
+  {
+    id: 2,
+    total_amount: 180000,
+    payment_method: "Card",
+    status: "Unpaid",
+    created_at: "2025-10-21T11:30:00Z",
+    court_booking_id: 2,
+    service_booking_id: 2,
+  },
+];
+
+export const workShifts: WorkShift[] = [
+  {
+    id: 1,
+    date: "2025-11-03",
+    start_time: "08:00",
+    end_time: "12:00",
+    required_count: 3,
+  },
+  {
+    id: 2,
+    date: "2025-11-03",
+    start_time: "12:00",
+    end_time: "16:00",
+    required_count: 2,
+  },
+];
+
+export const shiftAssignments: ShiftAssignment[] = [
+  { employee_id: 1, work_shift_id: 1, status: "Assigned" },
+  { employee_id: 2, work_shift_id: 1, status: "Assigned" },
+];

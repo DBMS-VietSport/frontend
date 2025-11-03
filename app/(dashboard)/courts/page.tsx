@@ -3,31 +3,25 @@
 import * as React from "react";
 import { Separator } from "@/components/ui/separator";
 import { CourtFilterBar } from "@/components/courts/CourtFilterBar";
-import { CourtCardGrid } from "@/components/courts/CourtCardGrid";
+import { CourtAccordionList } from "@/components/courts/CourtAccordionList";
 import { CourtFormDialog } from "@/components/courts/CourtFormDialog";
+import { CourtEditDialog } from "@/components/courts/CourtEditDialog";
 import type {
   Court,
-  CourtCardData,
   CreateCourtPayload,
+  UpdateCourtPayload,
 } from "@/lib/courts/types";
-import { listCourts, addCourt } from "@/lib/courts/mockRepo";
-import {
-  searchCourts,
-  filterByCourtType,
-  makeCourtCard,
-} from "@/lib/courts/selectors";
-import { getCourtImageUrl } from "@/lib/courts/utils";
+import { courtRepo } from "@/lib/mock";
+import { searchCourts, filterByCourtType } from "@/lib/courts/selectors";
 import { toast } from "sonner";
-import { useRouter } from "next/navigation";
 
 export default function CourtsPage() {
-  const router = useRouter();
   const [courts, setCourts] = React.useState<Court[]>([]);
   const [filteredCourts, setFilteredCourts] = React.useState<Court[]>([]);
-  const [courtCards, setCourtCards] = React.useState<CourtCardData[]>([]);
   const [searchText, setSearchText] = React.useState("");
   const [selectedType, setSelectedType] = React.useState<number | null>(null);
-  const [dialogOpen, setDialogOpen] = React.useState(false);
+  const [addDialogOpen, setAddDialogOpen] = React.useState(false);
+  const [editDialogOpen, setEditDialogOpen] = React.useState(false);
   const [editingCourt, setEditingCourt] = React.useState<Court | null>(null);
   const [isLoading, setIsLoading] = React.useState(true);
 
@@ -43,19 +37,10 @@ export default function CourtsPage() {
     setFilteredCourts(filtered);
   }, [courts, searchText, selectedType]);
 
-  // Transform to cards
-  React.useEffect(() => {
-    const cards = filteredCourts.map((court) => {
-      const imageUrl = getCourtImageUrl(court.court_type_name);
-      return makeCourtCard(court, imageUrl);
-    });
-    setCourtCards(cards);
-  }, [filteredCourts]);
-
   const loadCourts = async () => {
     setIsLoading(true);
     try {
-      const data = await listCourts();
+      const data = await courtRepo.listCourts();
       setCourts(data);
     } catch (error) {
       console.error("Failed to load courts:", error);
@@ -66,32 +51,34 @@ export default function CourtsPage() {
   };
 
   const handleAddClick = () => {
-    setEditingCourt(null);
-    setDialogOpen(true);
+    setAddDialogOpen(true);
   };
 
-  const handleEditClick = (court: Court) => {
+  const handleCourtClick = (court: Court) => {
     setEditingCourt(court);
-    setDialogOpen(true);
+    setEditDialogOpen(true);
   };
 
-  const handleCardClick = (card: CourtCardData) => {
-    router.push(`/courts/${card.id}`);
-  };
-
-  const handleSave = async (payload: CreateCourtPayload) => {
+  const handleAddCourt = async (payload: CreateCourtPayload) => {
     try {
-      if (editingCourt) {
-        // Update existing (handled via dialog)
-        toast.success("Cập nhật sân thành công");
-      } else {
-        await addCourt(payload);
-        toast.success("Đã thêm sân mới thành công");
-      }
+      // payload mapping: UI payload aligns with Court sans id/display_name
+      await courtRepo.addCourt(payload as any);
+      toast.success("Đã thêm sân mới thành công");
       await loadCourts();
     } catch (error) {
-      console.error("Failed to save court:", error);
-      toast.error("Không thể lưu sân");
+      console.error("Failed to add court:", error);
+      toast.error("Không thể thêm sân");
+    }
+  };
+
+  const handleUpdateCourt = async (id: number, payload: UpdateCourtPayload) => {
+    try {
+      await courtRepo.updateCourt(id, payload as any);
+      toast.success("Cập nhật sân thành công");
+      await loadCourts();
+    } catch (error) {
+      console.error("Failed to update court:", error);
+      toast.error("Không thể cập nhật sân");
     }
   };
 
@@ -130,21 +117,31 @@ export default function CourtsPage() {
         </p>
       </div>
 
-      {/* Court Grid */}
+      {/* Court Accordion List */}
       {isLoading ? (
         <div className="flex items-center justify-center py-12">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
         </div>
       ) : (
-        <CourtCardGrid courts={courtCards} onCourtClick={handleCardClick} />
+        <CourtAccordionList
+          courts={filteredCourts}
+          onCourtClick={handleCourtClick}
+        />
       )}
 
-      {/* Add/Edit Dialog */}
+      {/* Add Dialog */}
       <CourtFormDialog
-        open={dialogOpen}
-        onOpenChange={setDialogOpen}
+        open={addDialogOpen}
+        onOpenChange={setAddDialogOpen}
+        onSave={handleAddCourt}
+      />
+
+      {/* Edit Dialog */}
+      <CourtEditDialog
+        open={editDialogOpen}
+        onOpenChange={setEditDialogOpen}
         court={editingCourt}
-        onSave={handleSave}
+        onSave={handleUpdateCourt}
       />
     </div>
   );

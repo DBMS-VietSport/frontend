@@ -20,71 +20,76 @@ import {
 } from "@/components/ui/select";
 import type {
   Court,
-  CreateCourtPayload,
   CourtStatus,
+  UpdateCourtPayload,
 } from "@/lib/courts/types";
 import { courtTypes, branches } from "@/lib/mock";
 
-interface CourtFormDialogProps {
+interface CourtEditDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSave: (payload: CreateCourtPayload) => Promise<void>;
+  court: Court | null;
+  onSave: (id: number, payload: UpdateCourtPayload) => Promise<void>;
 }
 
-export function CourtFormDialog({
+export function CourtEditDialog({
   open,
   onOpenChange,
+  court,
   onSave,
-}: CourtFormDialogProps) {
-  const [formData, setFormData] = React.useState<CreateCourtPayload>({
+}: CourtEditDialogProps) {
+  const [formData, setFormData] = React.useState<UpdateCourtPayload>({
     name: "",
-    court_type_id: 1,
-    branch_id: 1,
+    status: "Available",
     capacity: 4,
     base_hourly_price: 100000,
-    status: "Available",
   });
   const [isSaving, setIsSaving] = React.useState(false);
 
-  // Reset form when dialog opens
+  // Initialize form data when court changes
   React.useEffect(() => {
-    if (open) {
+    if (court) {
       setFormData({
-        name: "",
-        court_type_id: 1,
-        branch_id: 1,
-        capacity: 4,
-        base_hourly_price: 100000,
-        status: "Available",
+        name: court.name || "",
+        court_type_id: court.court_type_id,
+        branch_id: court.branch_id,
+        capacity: court.capacity,
+        base_hourly_price: court.base_hourly_price,
+        status: court.status,
+        maintenance_date: court.maintenance_date,
       });
     }
-  }, [open]);
+  }, [court, open]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    if (!court) return;
+
     // Validation
-    if (!formData.base_hourly_price || formData.base_hourly_price <= 0) return;
-    if (!formData.capacity || formData.capacity <= 0) return;
+    if (formData.base_hourly_price && formData.base_hourly_price <= 0) return;
+    if (formData.capacity && formData.capacity <= 0) return;
 
     setIsSaving(true);
     try {
-      await onSave(formData);
+      await onSave(court.id, formData);
       onOpenChange(false);
     } catch (error) {
-      console.error("Failed to save court:", error);
+      console.error("Failed to update court:", error);
     } finally {
       setIsSaving(false);
     }
   };
 
+  if (!court) return null;
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Thêm sân mới</DialogTitle>
+          <DialogTitle>Chỉnh sửa sân</DialogTitle>
           <DialogDescription>
-            Điền thông tin để thêm sân mới vào hệ thống
+            Cập nhật thông tin sân {court.name || `Sân ${court.id}`}
           </DialogDescription>
         </DialogHeader>
 
@@ -103,11 +108,12 @@ export function CourtFormDialog({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="court_type_id">
-                Loại sân <span className="text-destructive">*</span>
-              </Label>
+              <Label htmlFor="court_type_id">Loại sân</Label>
               <Select
-                value={formData.court_type_id.toString()}
+                value={
+                  formData.court_type_id?.toString() ||
+                  court.court_type_id.toString()
+                }
                 onValueChange={(value) =>
                   setFormData({
                     ...formData,
@@ -131,11 +137,11 @@ export function CourtFormDialog({
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="branch_id">
-                Chi nhánh <span className="text-destructive">*</span>
-              </Label>
+              <Label htmlFor="branch_id">Chi nhánh</Label>
               <Select
-                value={formData.branch_id.toString()}
+                value={
+                  formData.branch_id?.toString() || court.branch_id.toString()
+                }
                 onValueChange={(value) =>
                   setFormData({ ...formData, branch_id: parseInt(value) })
                 }
@@ -156,7 +162,7 @@ export function CourtFormDialog({
             <div className="space-y-2">
               <Label htmlFor="status">Trạng thái</Label>
               <Select
-                value={formData.status}
+                value={formData.status || court.status}
                 onValueChange={(value) =>
                   setFormData({
                     ...formData,
@@ -169,7 +175,8 @@ export function CourtFormDialog({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="Available">Đang hoạt động</SelectItem>
-                  <SelectItem value="Maintenance">Bảo trì</SelectItem>
+                  <SelectItem value="Maintenance">Đang bảo trì</SelectItem>
+                  <SelectItem value="InUse">Đang sử dụng</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -184,7 +191,7 @@ export function CourtFormDialog({
                 id="capacity"
                 type="number"
                 min="1"
-                value={formData.capacity}
+                value={formData.capacity || court.capacity}
                 onChange={(e) =>
                   setFormData({
                     ...formData,
@@ -203,7 +210,7 @@ export function CourtFormDialog({
                 id="base_hourly_price"
                 type="number"
                 min="0"
-                value={formData.base_hourly_price}
+                value={formData.base_hourly_price || court.base_hourly_price}
                 onChange={(e) =>
                   setFormData({
                     ...formData,
@@ -215,13 +222,16 @@ export function CourtFormDialog({
             </div>
           </div>
 
-          {formData.status === "Maintenance" && (
+          {(formData.status === "Maintenance" ||
+            court.status === "Maintenance") && (
             <div className="space-y-2">
               <Label htmlFor="maintenance_date">Ngày bảo trì</Label>
               <Input
                 id="maintenance_date"
                 type="date"
-                value={formData.maintenance_date || ""}
+                value={
+                  formData.maintenance_date || court.maintenance_date || ""
+                }
                 onChange={(e) =>
                   setFormData({
                     ...formData,
@@ -241,7 +251,7 @@ export function CourtFormDialog({
               Hủy
             </Button>
             <Button type="submit" disabled={isSaving}>
-              {isSaving ? "Đang lưu..." : "Thêm mới"}
+              {isSaving ? "Đang lưu..." : "Cập nhật"}
             </Button>
           </div>
         </form>

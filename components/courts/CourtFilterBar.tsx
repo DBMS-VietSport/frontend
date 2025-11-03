@@ -12,7 +12,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Search, Plus } from "lucide-react";
-import { mockCourtTypes } from "@/lib/courts/mockRepo";
+import { courtTypes } from "@/lib/mock";
 
 interface CourtFilterBarProps {
   searchText: string;
@@ -52,7 +52,7 @@ export function CourtFilterBar({
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Tất cả loại sân</SelectItem>
-            {mockCourtTypes.map((type) => (
+            {courtTypes.map((type) => (
               <SelectItem key={type.id} value={type.id.toString()}>
                 {type.name}
               </SelectItem>

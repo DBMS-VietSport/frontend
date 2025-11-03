@@ -74,3 +74,31 @@ export function filterByStatus(
   if (!status) return courts;
   return courts.filter((court) => court.status === status);
 }
+
+/**
+ * Group courts by type
+ */
+export interface CourtTypeGroup {
+  typeId: number;
+  typeName: string;
+  courts: Court[];
+}
+
+export function groupCourtsByType(courts: Court[]): CourtTypeGroup[] {
+  const groups = new Map<number, CourtTypeGroup>();
+
+  courts.forEach((court) => {
+    if (!groups.has(court.court_type_id)) {
+      groups.set(court.court_type_id, {
+        typeId: court.court_type_id,
+        typeName: court.court_type_name,
+        courts: [],
+      });
+    }
+    groups.get(court.court_type_id)!.courts.push(court);
+  });
+
+  return Array.from(groups.values()).sort((a, b) =>
+    a.typeName.localeCompare(b.typeName)
+  );
+}

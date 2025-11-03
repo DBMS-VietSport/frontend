@@ -98,7 +98,7 @@ const data = {
         },
         {
           title: "Chỉnh sửa ca",
-          url: "/shifts/edit",
+          url: "/shifts/settings",
         },
       ],
     },

@@ -45,9 +45,7 @@ import {
   getStatusBadgeColor,
   getStatusText,
 } from "@/lib/courts/utils";
-import { mockCourtTypes } from "@/lib/courts/mockRepo";
-import { mockBranches as branches } from "@/lib/booking/mockRepo";
-import { mockEmployees } from "@/lib/employees/mockRepo";
+import { courtTypes, branches, employeeRepo } from "@/lib/mock";
 import { toast } from "sonner";
 
 interface CourtDetailTabsProps {

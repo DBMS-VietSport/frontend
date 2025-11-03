@@ -40,7 +40,6 @@ export interface CourtCardData {
   status: CourtStatus;
   image: string;
 }
-
 // Maintenance report
 export interface MaintenanceReport {
   id: number;

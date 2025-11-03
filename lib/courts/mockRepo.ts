@@ -227,6 +227,5 @@ export async function getBookingsForCourt(
     };
   });
 }
-
 // Export mock data for direct access
 export { mockCourtTypes, mockBranches };
