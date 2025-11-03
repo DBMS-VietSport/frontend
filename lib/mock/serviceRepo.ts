@@ -7,7 +7,7 @@ export interface ServiceRow {
   branch_service_id: number;
   name: string;
   rental_type: Service["rental_type"];
-  unit: string;
+  unit: Service["unit"];
   unit_price: number;
   current_stock: number;
   min_stock_threshold: number;
@@ -61,7 +61,7 @@ export const serviceRepo = {
   },
   createService: async (payload: {
     name: string;
-    unit: string;
+    unit: Service["unit"];
     rental_type: Service["rental_type"];
     branch_id: number;
     unit_price: number;

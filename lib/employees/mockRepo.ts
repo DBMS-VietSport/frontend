@@ -336,6 +336,5 @@ export async function getPerformanceStats(
   }));
 }
 
-// Export mock data for direct access
-export { mockRoles };
+// Export mockEmployees (defined as let above, so needs explicit export)
 export { mockEmployees };

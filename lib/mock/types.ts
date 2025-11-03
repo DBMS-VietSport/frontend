@@ -35,10 +35,12 @@ export interface Court {
   display_name: string;
 }
 
+export type ServiceUnit = "Lần" | "Giờ" | "Trận" | "Tháng" | "Lượt" | "Chai";
+
 export interface Service {
   id: number;
   name: string;
-  unit: string;
+  unit: ServiceUnit;
   rental_type: "Dụng cụ" | "Nhân sự" | "Tiện ích";
 }
 

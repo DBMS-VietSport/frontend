@@ -15,7 +15,7 @@ export async function getServiceById(serviceId: number, branchId?: number) {
 
 export async function createService(payload: {
   name: string;
-  unit: string;
+  unit: Service["unit"];
   rental_type: Service["rental_type"];
   branch_id: number;
   unit_price: number;

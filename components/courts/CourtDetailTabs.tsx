@@ -74,6 +74,7 @@ export function CourtDetailTabs({
   const [selectedBooking, setSelectedBooking] =
     React.useState<CourtBookingSummary | null>(null);
   const [bookingDialogOpen, setBookingDialogOpen] = React.useState(false);
+  const [employees, setEmployees] = React.useState(employeeRepo.list());
 
   // Maintenance form state
   const [maintenanceForm, setMaintenanceForm] =
@@ -229,7 +230,7 @@ export function CourtDetailTabs({
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        {mockCourtTypes.map((type) => (
+                        {courtTypes.map((type) => (
                           <SelectItem key={type.id} value={type.id.toString()}>
                             {type.name}
                           </SelectItem>
@@ -520,7 +521,7 @@ export function CourtDetailTabs({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {mockEmployees.map((emp) => (
+                  {employees.map((emp) => (
                     <SelectItem key={emp.id} value={emp.id.toString()}>
                       {emp.full_name}
                     </SelectItem>

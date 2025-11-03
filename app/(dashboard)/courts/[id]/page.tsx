@@ -8,13 +8,12 @@ import { ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 import { CourtInfoCard } from "@/components/courts/CourtInfoCard";
 import { CourtDetailTabs } from "@/components/courts/CourtDetailTabs";
-import { CourtFormDialog } from "@/components/courts/CourtFormDialog";
+import { CourtEditDialog } from "@/components/courts/CourtEditDialog";
 import type {
   Court,
   MaintenanceReport,
   CourtBookingSummary,
   UpdateCourtPayload,
-  CreateCourtPayload,
   CreateMaintenanceReportPayload,
 } from "@/lib/courts/types";
 import {
@@ -92,21 +91,12 @@ export default function CourtDetailPage() {
     }
   };
 
-  const handleSaveFromDialog = async (payload: CreateCourtPayload) => {
-    if (!court) return;
-
+  const handleSaveFromDialog = async (
+    id: number,
+    payload: UpdateCourtPayload
+  ) => {
     try {
-      const updatePayload: UpdateCourtPayload = {
-        name: payload.name,
-        court_type_id: payload.court_type_id,
-        branch_id: payload.branch_id,
-        capacity: payload.capacity,
-        base_hourly_price: payload.base_hourly_price,
-        status: payload.status,
-        maintenance_date: payload.maintenance_date,
-      };
-
-      const updated = await updateCourt(court.id, updatePayload);
+      const updated = await updateCourt(id, payload);
       setCourt(updated);
       setDialogOpen(false);
       toast.success("Cập nhật thông tin thành công");
@@ -187,7 +177,7 @@ export default function CourtDetailPage() {
       />
 
       {/* Edit Dialog */}
-      <CourtFormDialog
+      <CourtEditDialog
         open={dialogOpen}
         onOpenChange={setDialogOpen}
         court={court}
