@@ -118,16 +118,16 @@ const data = {
       icon: BarChart3,
       items: [
         {
-          title: "Báo cáo doanh thu",
+          title: "Doanh thu",
           url: "/reports/revenue",
         },
         {
-          title: "Báo cáo sử dụng sân",
-          url: "/reports/field-usage",
+          title: "Sử dụng sân",
+          url: "/reports/courts",
         },
         {
-          title: "Báo cáo sử dụng dịch vụ",
-          url: "/reports/service-usage",
+          title: "Khách hàng",
+          url: "/reports/customers",
         },
       ],
     },
