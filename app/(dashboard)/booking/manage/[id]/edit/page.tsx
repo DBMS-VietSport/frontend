@@ -20,6 +20,7 @@ import {
   mockCourts,
   mockBranchServices,
   mockServices,
+  cancelBooking,
 } from "@/lib/booking/mockRepo";
 import { calcTotals, formatVND } from "@/lib/booking/pricing";
 import type {
@@ -234,6 +235,31 @@ export default function EditBookingPage() {
     router.push("/booking/manage");
   };
 
+  const handleCancelBooking = async () => {
+    if (!booking) return;
+    if (booking.status === "Paid") {
+      toast.error("Không thể hủy đơn đã thanh toán");
+      return;
+    }
+    if (booking.status === "Cancelled") {
+      toast.error("Đơn đã được hủy trước đó");
+      return;
+    }
+    const ok = window.confirm(`Bạn có chắc muốn hủy booking #${bookingId}?`);
+    if (!ok) return;
+    try {
+      setIsSaving(true);
+      await cancelBooking(bookingId);
+      toast.success("Đã hủy booking thành công");
+      router.push("/booking/manage");
+    } catch (e) {
+      console.error(e);
+      toast.error("Hủy booking thất bại");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="container mx-auto py-6">
@@ -337,6 +363,21 @@ export default function EditBookingPage() {
             onCancel={handleCancel}
             isSaving={isSaving}
           />
+          {/* Hard Cancel Booking Button */}
+          <div className="mt-4">
+            <Button
+              variant="destructive"
+              className="w-full"
+              onClick={handleCancelBooking}
+              disabled={
+                isSaving ||
+                booking.status === "Paid" ||
+                booking.status === "Cancelled"
+              }
+            >
+              Hủy phiếu đặt sân
+            </Button>
+          </div>
         </div>
       </div>
     </div>

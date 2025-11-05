@@ -17,8 +17,10 @@ import {
   makeBookingDetailView,
   applyFilters,
 } from "@/lib/booking/selectors";
+import { useAuth } from "@/lib/auth/useAuth";
 
 export default function BookingManagePage() {
+  const { user } = useAuth();
   const [filters, setFilters] = React.useState<FilterValues>({
     date: new Date(),
     courtTypeId: null,
@@ -51,7 +53,13 @@ export default function BookingManagePage() {
         })
       );
 
-      setAllRows(rows);
+      // If customer, restrict to own bookings (by full name)
+      const visibleRows =
+        user && user.role === "customer"
+          ? rows.filter((r) => r.customerName === user.fullName)
+          : rows;
+
+      setAllRows(visibleRows);
     } catch (error) {
       console.error("Failed to load bookings:", error);
     } finally {
@@ -89,20 +97,28 @@ export default function BookingManagePage() {
     }
   };
 
+  const isCustomer = user?.role === "customer";
+
   return (
     <div className="container mx-auto py-6 space-y-8 max-w-screen-2xl">
       {/* Page Header */}
       <div className="space-y-2">
-        <h1 className="text-3xl font-bold tracking-tight">Quản lý đặt sân</h1>
+        <h1 className="text-3xl font-bold tracking-tight">
+          {isCustomer ? "Đặt sân của tôi" : "Quản lý đặt sân"}
+        </h1>
         <p className="text-muted-foreground">
-          Xem và chỉnh sửa thông tin các đơn đặt sân
+          {isCustomer
+            ? "Xem và chỉnh sửa các đơn đặt sân của bạn"
+            : "Xem và chỉnh sửa thông tin các đơn đặt sân"}
         </p>
       </div>
 
       <Separator />
 
-      {/* Filters */}
-      <FilterBar filters={filters} onFiltersChange={setFilters} />
+      {/* Filters (hidden for customers) */}
+      {!isCustomer && (
+        <FilterBar filters={filters} onFiltersChange={setFilters} />
+      )}
 
       {/* Results Summary */}
       <div className="flex items-center justify-between">

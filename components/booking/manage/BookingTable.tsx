@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Edit, Eye } from "lucide-react";
+import { Edit } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { BookingRow } from "@/lib/booking/types";
 
@@ -98,7 +98,6 @@ export function BookingTable({ rows, onRowClick }: BookingTableProps) {
           <TableHeader>
             <TableRow>
               <TableHead>Mã booking</TableHead>
-              <TableHead>Chi nhánh</TableHead>
               <TableHead>Sân</TableHead>
               <TableHead>Loại sân</TableHead>
               <TableHead>Khách hàng</TableHead>
@@ -117,7 +116,6 @@ export function BookingTable({ rows, onRowClick }: BookingTableProps) {
                 onClick={() => onRowClick(row)}
               >
                 <TableCell className="font-medium">{row.code}</TableCell>
-                <TableCell>{row.branchName}</TableCell>
                 <TableCell>{row.courtName}</TableCell>
                 <TableCell>{row.courtType}</TableCell>
                 <TableCell>{row.customerName}</TableCell>
@@ -133,17 +131,6 @@ export function BookingTable({ rows, onRowClick }: BookingTableProps) {
                 <TableCell>{getCourtStatusBadge(row.courtStatus)}</TableCell>
                 <TableCell className="text-right">
                   <div className="flex items-center justify-end gap-2">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onRowClick(row);
-                      }}
-                    >
-                      <Eye className="h-4 w-4" />
-                    </Button>
                     <Button
                       variant="ghost"
                       size="icon"
