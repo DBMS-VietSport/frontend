@@ -5,7 +5,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { toast } from "sonner";
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -31,7 +31,7 @@ const resetPasswordSchema = z
 
 type ResetPasswordFormData = z.infer<typeof resetPasswordSchema>;
 
-export default function ResetPasswordPage() {
+function ResetPasswordForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const email = searchParams.get("email") || "";
@@ -243,5 +243,13 @@ export default function ResetPasswordPage() {
         </Field>
       </FieldGroup>
     </form>
+  );
+}
+
+export default function ResetPasswordPage() {
+  return (
+    <Suspense fallback={<div>Đang tải...</div>}>
+      <ResetPasswordForm />
+    </Suspense>
   );
 }

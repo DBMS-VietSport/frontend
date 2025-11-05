@@ -5,7 +5,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { toast } from "sonner";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, Suspense } from "react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -25,7 +25,7 @@ const verifyOtpSchema = z.object({
 
 type VerifyOtpFormData = z.infer<typeof verifyOtpSchema>;
 
-export default function VerifyOtpPage() {
+function VerifyOtpForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const email = searchParams.get("email") || "";
@@ -177,7 +177,9 @@ export default function VerifyOtpPage() {
               {otpValues.map((value, index) => (
                 <Input
                   key={index}
-                  ref={(el) => (inputRefs.current[index] = el)}
+                  ref={(el) => {
+                    inputRefs.current[index] = el;
+                  }}
                   type="text"
                   inputMode="numeric"
                   maxLength={1}
@@ -237,5 +239,13 @@ export default function VerifyOtpPage() {
         </Field>
       </FieldGroup>
     </form>
+  );
+}
+
+export default function VerifyOtpPage() {
+  return (
+    <Suspense fallback={<div>Đang tải...</div>}>
+      <VerifyOtpForm />
+    </Suspense>
   );
 }
