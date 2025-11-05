@@ -492,6 +492,26 @@ export async function updateServices(
   }
 }
 
+export async function cancelBooking(id: number): Promise<void> {
+  await new Promise((resolve) => setTimeout(resolve, 80));
+  const booking = mockCourtBookings.find((b) => b.id === id);
+  if (!booking) throw new Error("Booking not found");
+
+  booking.status = "Cancelled";
+  // Update slots status
+  mockBookingSlots = mockBookingSlots.map((s) =>
+    s.court_booking_id === id ? { ...s, status: "Cancelled" } : s
+  );
+
+  // Also cancel related service booking if exists
+  const serviceBooking = mockServiceBookings.find(
+    (sb) => sb.court_booking_id === id
+  );
+  if (serviceBooking) {
+    serviceBooking.status = "Cancelled" as any;
+  }
+}
+
 /**
  * Check if new slot conflicts with existing bookings on the same court
  */

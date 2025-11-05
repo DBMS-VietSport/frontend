@@ -8,3 +8,6 @@ export * from "./serviceRepo";
 export * from "./bookingRepo";
 export * from "./shiftRepo";
 export * from "./invoiceRepo";
+export * from "./scheduleRepo";
+export * from "./payrollRepo";
+export * from "./leaveRequestRepo";

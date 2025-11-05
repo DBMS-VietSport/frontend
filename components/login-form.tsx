@@ -10,18 +10,18 @@ import {
   FieldLabel,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { Mail, Lock, Eye, EyeOff } from "lucide-react";
+import { User, Lock, Eye, EyeOff } from "lucide-react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { toast } from "sonner";
-import { accounts } from "@/lib/mock/data";
-import { sharedPasswordStorage } from "@/lib/mock/passwordStorage";
+import { useAuth } from "@/lib/auth/useAuth";
+import { MOCK_USERS, ROLE_LABELS } from "@/lib/mock/authMock";
 
 const loginSchema = z.object({
-  email: z.string().email("Email không hợp lệ"),
+  username: z.string().min(1, "Vui lòng nhập tên đăng nhập"),
   password: z.string().min(1, "Vui lòng nhập mật khẩu"),
 });
 
@@ -32,6 +32,7 @@ export function LoginForm({
   ...props
 }: React.ComponentProps<"form">) {
   const router = useRouter();
+  const { login } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const {
     register,
@@ -43,34 +44,21 @@ export function LoginForm({
 
   const onSubmit = async (data: LoginFormData) => {
     try {
-      // Find account by username (email)
-      const account = accounts.find((a) => a.username === data.email);
+      // Use the mock auth login
+      login(data.username, data.password);
 
-      if (!account) {
-        toast.error("Email hoặc mật khẩu không chính xác");
-        return;
-      }
-
-      // Check password
-      const storedPassword = sharedPasswordStorage.get(account.id);
-      if (storedPassword !== data.password) {
-        toast.error("Email hoặc mật khẩu không chính xác");
-        return;
-      }
-
-      // Success
       toast.success("Đăng nhập thành công!");
-
-      // Store user info in localStorage (mock session)
-      localStorage.setItem("userId", account.id);
-      localStorage.setItem("userEmail", data.email);
 
       // Redirect to dashboard
       setTimeout(() => {
-        router.push("/");
+        router.push("/dashboard");
       }, 500);
     } catch (error) {
-      toast.error("Đã xảy ra lỗi. Vui lòng thử lại.");
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Đã xảy ra lỗi. Vui lòng thử lại.";
+      toast.error(message);
     }
   };
 
@@ -86,42 +74,35 @@ export function LoginForm({
             Chào mừng trở lại
           </h1>
           <p className="text-muted-foreground text-sm text-balance">
-            Đăng nhập để tiếp tục đặt sân thể thao
+            Đăng nhập vào hệ thống VietSport
           </p>
         </div>
 
         <div className="space-y-4 pt-2">
           <Field>
-            <FieldLabel htmlFor="email">Email</FieldLabel>
+            <FieldLabel htmlFor="username">Tên đăng nhập</FieldLabel>
             <div className="relative">
-              <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <User className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
-                id="email"
-                type="email"
-                placeholder="m@example.com"
+                id="username"
+                type="text"
+                placeholder="admin"
                 className="pl-10"
-                {...register("email")}
-                aria-invalid={!!errors.email}
+                {...register("username")}
+                aria-invalid={!!errors.username}
               />
             </div>
-            <FieldError errors={[errors.email]} />
+            <FieldError errors={[errors.username]} />
           </Field>
 
           <Field>
-            <div className="flex items-center justify-between">
-              <FieldLabel htmlFor="password">Mật khẩu</FieldLabel>
-              <a
-                href="/forgot-password"
-                className="text-xs text-primary hover:underline underline-offset-4"
-              >
-                Quên mật khẩu?
-              </a>
-            </div>
+            <FieldLabel htmlFor="password">Mật khẩu</FieldLabel>
             <div className="relative">
               <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 id="password"
                 type={showPassword ? "text" : "password"}
+                placeholder="123456"
                 className="pl-10 pr-10"
                 {...register("password")}
                 aria-invalid={!!errors.password}
@@ -148,15 +129,24 @@ export function LoginForm({
           </Button>
         </Field>
 
-        <div className="relative">
-          <div className="absolute inset-0 flex items-center">
-            <span className="w-full border-t" />
+        {/* Test Accounts */}
+        <div className="rounded-lg border bg-muted/50 p-4">
+          <p className="text-xs font-semibold mb-2 text-muted-foreground">
+            Tài khoản test:
+          </p>
+          <div className="max-h-40 overflow-y-auto pr-2">
+            <div className="space-y-1 text-xs text-muted-foreground">
+              {MOCK_USERS.map((user) => (
+                <div key={user.username} className="flex justify-between">
+                  <span className="font-mono">{user.username}</span>
+                  <span className="text-xs">({ROLE_LABELS[user.role]})</span>
+                </div>
+              ))}
+            </div>
           </div>
-          <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-background px-2 text-muted-foreground">
-              Hoặc
-            </span>
-          </div>
+          <p className="text-xs mt-2 text-muted-foreground">
+            Mật khẩu: <span className="font-mono">123456</span>
+          </p>
         </div>
 
         <Field>
