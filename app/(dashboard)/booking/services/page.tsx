@@ -41,9 +41,23 @@ export default function ServicesPage() {
   const [coaches, setCoaches] = React.useState<Coach[]>([...mockCoaches]);
 
   const handleServiceUpdate = React.useCallback(
-    (id: string, quantity: number, durationHours?: number) => {
+    (
+      id: string,
+      quantity: number,
+      durationHours?: number,
+      hourEntries?: Array<{ id: string; hours: number }>
+    ) => {
       setServices((prev) =>
-        prev.map((s) => (s.id === id ? { ...s, quantity, durationHours } : s))
+        prev.map((s) =>
+          s.id === id
+            ? {
+                ...s,
+                quantity,
+                durationHours,
+                hourEntries: hourEntries || s.hourEntries,
+              }
+            : s
+        )
       );
     },
     []

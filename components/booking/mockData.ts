@@ -42,56 +42,49 @@ export const mockCourts: Court[] = [
     name: "Sân 1",
     type: "badminton",
     facilityId: "1",
-    imageUrl:
-      "https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?w=500&h=300&fit=crop",
+    imageUrl: "/badminton-court.jpg",
   },
   {
     id: "2",
     name: "Sân 2",
     type: "badminton",
     facilityId: "1",
-    imageUrl:
-      "https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?w=500&h=300&fit=crop",
+    imageUrl: "/badminton-court.jpg",
   },
   {
     id: "3",
     name: "Sân 3",
     type: "badminton",
     facilityId: "1",
-    imageUrl:
-      "https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?w=500&h=300&fit=crop",
+    imageUrl: "/badminton-court.jpg",
   },
   {
     id: "4",
     name: "Sân Tennis 1",
     type: "tennis",
     facilityId: "1",
-    imageUrl:
-      "https://images.unsplash.com/photo-1554068865-24cecd4e34b8?w=500&h=300&fit=crop",
+    imageUrl: "/tennis-court.jpg",
   },
   {
     id: "5",
     name: "Sân Tennis 2",
     type: "tennis",
     facilityId: "1",
-    imageUrl:
-      "https://images.unsplash.com/photo-1554068865-24cecd4e34b8?w=500&h=300&fit=crop",
+    imageUrl: "/tennis-court.jpg",
   },
   {
     id: "6",
     name: "Sân Bóng Đá 1",
     type: "football",
     facilityId: "1",
-    imageUrl:
-      "https://images.unsplash.com/photo-1459865264687-595d652de67e?w=500&h=300&fit=crop",
+    imageUrl: "/soccer-sourt.jpg",
   },
   {
     id: "7",
     name: "Sân Bóng Rổ 1",
     type: "basketball",
     facilityId: "1",
-    imageUrl:
-      "https://images.unsplash.com/photo-1546519638-68e109498ffc?w=500&h=300&fit=crop",
+    imageUrl: "/basketball-court.jpg",
   },
 ];
 
@@ -168,8 +161,7 @@ export const mockServiceItems: ServiceItem[] = [
     price: 10000,
     unit: "turn",
     quantity: 0,
-    imageUrl:
-      "https://images.unsplash.com/photo-1566876046715-4abc871a9e18?w=200&h=150&fit=crop",
+    imageUrl: "/badminton-racket.jpg",
   },
   {
     id: "eq-2",
@@ -178,8 +170,7 @@ export const mockServiceItems: ServiceItem[] = [
     price: 10000,
     unit: "hour",
     quantity: 0,
-    imageUrl:
-      "https://images.unsplash.com/photo-1551698618-1dfe5d97d256?w=200&h=150&fit=crop",
+    imageUrl: "/tennis-racket.jpg",
   },
   {
     id: "eq-3",
@@ -188,8 +179,7 @@ export const mockServiceItems: ServiceItem[] = [
     price: 0,
     unit: "free",
     quantity: 0,
-    imageUrl:
-      "https://images.unsplash.com/photo-1431324155629-1a6deb1dec8d?w=200&h=150&fit=crop",
+    imageUrl: "/soccer-ball.jpg",
   },
   {
     id: "eq-4",
@@ -198,8 +188,7 @@ export const mockServiceItems: ServiceItem[] = [
     price: 0,
     unit: "free",
     quantity: 0,
-    imageUrl:
-      "https://images.unsplash.com/photo-1546519638-68e109498ffc?w=200&h=150&fit=crop",
+    imageUrl: "/basket-ball.jpg",
   },
   // Facilities
   {
@@ -209,8 +198,7 @@ export const mockServiceItems: ServiceItem[] = [
     price: 10000,
     unit: "turn",
     quantity: 0,
-    imageUrl:
-      "https://images.unsplash.com/photo-1618641662184-bafefb91a542?w=200&h=150&fit=crop",
+    imageUrl: "/locker.jpg",
   },
   {
     id: "fac-2",
@@ -219,8 +207,7 @@ export const mockServiceItems: ServiceItem[] = [
     price: 10000,
     unit: "turn",
     quantity: 0,
-    imageUrl:
-      "https://images.unsplash.com/photo-1620626011761-996317b8d101?w=200&h=150&fit=crop",
+    imageUrl: "/bathroom.jpg",
   },
   // Drinks
   {
@@ -230,8 +217,7 @@ export const mockServiceItems: ServiceItem[] = [
     price: 10000,
     unit: "turn",
     quantity: 0,
-    imageUrl:
-      "https://images.unsplash.com/photo-1554866585-cd94860890b7?w=200&h=150&fit=crop",
+    imageUrl: "/revive.jpg",
   },
   {
     id: "dr-2",
@@ -240,8 +226,25 @@ export const mockServiceItems: ServiceItem[] = [
     price: 10000,
     unit: "turn",
     quantity: 0,
-    imageUrl:
-      "https://images.unsplash.com/photo-1580375608366-882e72b7b654?w=200&h=150&fit=crop",
+    imageUrl: "/aquafina.jpg",
+  },
+  {
+    id: "dr-3",
+    name: "Coca Cola",
+    category: "drink",
+    price: 10000,
+    unit: "turn",
+    quantity: 0,
+    imageUrl: "/coca.jpg",
+  },
+  {
+    id: "dr-4",
+    name: "Pepsi",
+    category: "drink",
+    price: 10000,
+    unit: "turn",
+    quantity: 0,
+    imageUrl: "/pepsi.jpg",
   },
 ];
 
@@ -281,6 +284,53 @@ export const mockCoaches: Coach[] = [
     ],
   },
   {
+    id: "coach-2-1",
+    name: "Thanh Hà",
+    sport: "Cầu lông",
+    pricePerHour: 130000,
+    quantity: 0,
+    avatarUrl:
+      "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&h=200&fit=crop",
+    degree: "Cử nhân Thể dục Thể thao",
+    bio: "Huấn luyện viên cầu lông với 6 năm kinh nghiệm, chuyên đào tạo trẻ em và người mới bắt đầu.",
+    studentsTrained: 95,
+    expertise: [
+      "Đào tạo cơ bản",
+      "Phát triển kỹ năng trẻ em",
+      "Tư vấn dinh dưỡng thể thao",
+    ],
+  },
+  {
+    id: "coach-2-2",
+    name: "Đức Minh",
+    sport: "Cầu lông",
+    pricePerHour: 160000,
+    quantity: 0,
+    avatarUrl:
+      "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=200&h=200&fit=crop",
+    degree: "Cử nhân Thể dục Thể thao",
+    bio: "Cựu vận động viên cầu lông, từng thi đấu giải quốc gia. Chuyển sang huấn luyện từ năm 2018.",
+    studentsTrained: 110,
+    expertise: ["Kỹ thuật đánh đơn", "Chiến thuật thi đấu", "Tâm lý thể thao"],
+  },
+  {
+    id: "coach-2-3",
+    name: "Linh Chi",
+    sport: "Cầu lông",
+    pricePerHour: 140000,
+    quantity: 0,
+    avatarUrl:
+      "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=200&h=200&fit=crop",
+    degree: "Thạc sĩ Thể dục Thể thao",
+    bio: "Huấn luyện viên nữ chuyên nghiệp, đã đào tạo nhiều học viên đạt giải cao trong các giải đấu địa phương.",
+    studentsTrained: 125,
+    expertise: [
+      "Đào tạo nữ giới",
+      "Kỹ thuật di chuyển",
+      "Phòng tránh chấn thương",
+    ],
+  },
+  {
     id: "coach-3",
     name: "Minh Tuấn",
     sport: "Tennis",
@@ -296,6 +346,45 @@ export const mockCoaches: Coach[] = [
       "Chiến thuật giao bóng",
       "Thể lực",
     ],
+  },
+  {
+    id: "coach-3-1",
+    name: "Văn Đức",
+    sport: "Tennis",
+    pricePerHour: 180000,
+    quantity: 0,
+    avatarUrl:
+      "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&h=200&fit=crop",
+    degree: "Thạc sĩ Thể dục Thể thao",
+    bio: "Huấn luyện viên tennis với 12 năm kinh nghiệm, từng là vận động viên quốc gia.",
+    studentsTrained: 180,
+    expertise: ["Kỹ thuật nâng cao", "Chiến thuật đánh đôi", "Tâm lý thi đấu"],
+  },
+  {
+    id: "coach-3-2",
+    name: "Hương Lan",
+    sport: "Tennis",
+    pricePerHour: 135000,
+    quantity: 0,
+    avatarUrl:
+      "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=200&h=200&fit=crop",
+    degree: "Cử nhân Thể dục Thể thao",
+    bio: "Huấn luyện viên tennis nữ, chuyên đào tạo trẻ em và người mới bắt đầu chơi tennis.",
+    studentsTrained: 100,
+    expertise: ["Đào tạo cơ bản", "Kỹ thuật volley", "Phát triển thể chất"],
+  },
+  {
+    id: "coach-3-3",
+    name: "Quốc Trung",
+    sport: "Tennis",
+    pricePerHour: 165000,
+    quantity: 0,
+    avatarUrl:
+      "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=200&h=200&fit=crop",
+    degree: "Cử nhân Thể dục Thể thao",
+    bio: "Huấn luyện viên tennis với phong cách giảng dạy nhiệt tình, giúp học viên nhanh chóng cải thiện kỹ năng.",
+    studentsTrained: 145,
+    expertise: ["Kỹ thuật serve", "Chiến thuật phòng thủ", "Rèn luyện sức bền"],
   },
   {
     id: "coach-4",
@@ -315,6 +404,49 @@ export const mockCoaches: Coach[] = [
     ],
   },
   {
+    id: "coach-4-1",
+    name: "Văn Toàn",
+    sport: "Bóng đá",
+    pricePerHour: 110000,
+    quantity: 0,
+    avatarUrl:
+      "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200&h=200&fit=crop",
+    degree: "Cử nhân Thể dục Thể thao",
+    bio: "Huấn luyện viên bóng đá trẻ, chuyên đào tạo kỹ năng cơ bản cho trẻ em và thanh thiếu niên.",
+    studentsTrained: 160,
+    expertise: ["Kỹ thuật cơ bản", "Đào tạo trẻ em", "Phát triển tốc độ"],
+  },
+  {
+    id: "coach-4-2",
+    name: "Thị Mai",
+    sport: "Bóng đá",
+    pricePerHour: 115000,
+    quantity: 0,
+    avatarUrl:
+      "https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?w=200&h=200&fit=crop",
+    degree: "Cử nhân Thể dục Thể thao",
+    bio: "Huấn luyện viên bóng đá nữ đầu tiên tại trung tâm, chuyên về kỹ thuật và chiến thuật.",
+    studentsTrained: 85,
+    expertise: ["Kỹ thuật sút bóng", "Chiến thuật tấn công", "Đào tạo nữ giới"],
+  },
+  {
+    id: "coach-4-3",
+    name: "Đình Hùng",
+    sport: "Bóng đá",
+    pricePerHour: 125000,
+    quantity: 0,
+    avatarUrl:
+      "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=200&h=200&fit=crop",
+    degree: "Huấn luyện viên FIFA B",
+    bio: "Huấn luyện viên bóng đá với 15 năm kinh nghiệm, từng làm việc với nhiều đội bóng chuyên nghiệp.",
+    studentsTrained: 250,
+    expertise: [
+      "Chiến thuật phòng thủ",
+      "Kỹ thuật thủ môn",
+      "Phân tích trận đấu",
+    ],
+  },
+  {
     id: "coach-5",
     name: "Thảo Vy",
     sport: "Bóng rổ",
@@ -329,6 +461,49 @@ export const mockCoaches: Coach[] = [
       "Kỹ thuật ném bóng",
       "Di chuyển không bóng",
       "Chiến thuật phòng thủ",
+    ],
+  },
+  {
+    id: "coach-5-1",
+    name: "Minh Đức",
+    sport: "Bóng rổ",
+    pricePerHour: 125000,
+    quantity: 0,
+    avatarUrl:
+      "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&h=200&fit=crop",
+    degree: "Cử nhân Thể dục Thể thao",
+    bio: "Huấn luyện viên bóng rổ với 9 năm kinh nghiệm, chuyên đào tạo kỹ năng ném và dẫn bóng.",
+    studentsTrained: 140,
+    expertise: ["Kỹ thuật dẫn bóng", "Ném xa 3 điểm", "Chiến thuật tấn công"],
+  },
+  {
+    id: "coach-5-2",
+    name: "Ngọc Anh",
+    sport: "Bóng rổ",
+    pricePerHour: 105000,
+    quantity: 0,
+    avatarUrl:
+      "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&h=200&fit=crop",
+    degree: "Cử nhân Thể dục Thể thao",
+    bio: "Huấn luyện viên bóng rổ nữ, chuyên về kỹ thuật cơ bản và phát triển thể lực cho học viên mới.",
+    studentsTrained: 75,
+    expertise: ["Kỹ thuật cơ bản", "Phát triển thể lực", "Đào tạo trẻ em"],
+  },
+  {
+    id: "coach-5-3",
+    name: "Quang Huy",
+    sport: "Bóng rổ",
+    pricePerHour: 130000,
+    quantity: 0,
+    avatarUrl:
+      "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=200&h=200&fit=crop",
+    degree: "Thạc sĩ Thể dục Thể thao",
+    bio: "Cựu vận động viên bóng rổ chuyên nghiệp, từng thi đấu giải quốc gia. Chuyển sang huấn luyện từ năm 2017.",
+    studentsTrained: 165,
+    expertise: [
+      "Kỹ thuật nâng cao",
+      "Chiến thuật đồng đội",
+      "Phòng tránh chấn thương",
     ],
   },
 ];

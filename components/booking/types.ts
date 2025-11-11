@@ -58,6 +58,8 @@ export interface ServiceItem {
   durationHours?: number;
   imageUrl?: string;
   description?: string;
+  // For hour-based equipment: array of hour entries
+  hourEntries?: Array<{ id: string; hours: number }>;
 }
 
 export interface Coach {
