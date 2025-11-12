@@ -6,8 +6,13 @@ import {
   branchServices,
   services,
   courts,
-  branches,
 } from "@/lib/mock";
+
+export interface RevenueFilterOptions {
+  branchId?: number | null;
+  month?: number | null;
+  quarter?: number | null;
+}
 
 export interface MonthlyRevenuePoint {
   x: number; // month 1..12
@@ -27,38 +32,71 @@ export interface CourtRevenueRow {
   total_amount: number;
 }
 
-function filterInvoicesByYearBranch(year: number, branchId?: number | null) {
+function isMonthInQuarter(month: number, quarter: number) {
+  const start = (quarter - 1) * 3 + 1;
+  const end = start + 2;
+  return month >= start && month <= end;
+}
+
+function invoiceMatchesBranch(
+  invoice: (typeof invoices)[number],
+  branchId: number
+) {
+  if (invoice.court_booking_id) {
+    const booking = courtBookings.find(
+      (b) => b.id === invoice.court_booking_id
+    );
+    if (!booking) return false;
+    const court = courts.find((c) => c.id === booking.court_id);
+    return court?.branch_id === branchId;
+  }
+  if (invoice.service_booking_id) {
+    const sb = serviceBookings.find((s) => s.id === invoice.service_booking_id);
+    if (!sb) return false;
+    const booking = courtBookings.find((b) => b.id === sb.court_booking_id);
+    const court = courts.find((c) => c?.id === booking?.court_id);
+    return court?.branch_id === branchId;
+  }
+  return false;
+}
+
+function filterInvoicesByPeriod(year: number, options?: RevenueFilterOptions) {
+  const { branchId, month, quarter } = options || {};
   return invoices.filter((inv) => {
-    if (inv.status !== "Paid") return false;
-    const d = new Date(inv.created_at);
-    if (d.getFullYear() !== year) return false;
-    if (!branchId) return true;
-    if (inv.court_booking_id) {
-      const booking = courtBookings.find((b) => b.id === inv.court_booking_id);
-      if (!booking) return false;
-      const court = courts.find((c) => c.id === booking.court_id);
-      return court?.branch_id === branchId;
+    const created = new Date(inv.created_at);
+    if (created.getFullYear() !== year) return false;
+    const m = created.getMonth() + 1;
+    if (month && m !== month) return false;
+    if (!month && quarter && !isMonthInQuarter(m, quarter)) return false;
+    if (branchId) {
+      return invoiceMatchesBranch(inv, branchId);
     }
-    if (inv.service_booking_id) {
-      const sb = serviceBookings.find((s) => s.id === inv.service_booking_id);
-      if (!sb) return false;
-      const booking = courtBookings.find((b) => b.id === sb.court_booking_id);
-      const court = courts.find((c) => c?.id === booking?.court_id);
-      return court?.branch_id === branchId;
-    }
-    return false;
+    return true;
   });
+}
+
+export function getInvoicesByPeriod(
+  year: number,
+  options?: RevenueFilterOptions
+) {
+  return filterInvoicesByPeriod(year, options);
+}
+
+export function getPaidInvoices(year: number, options?: RevenueFilterOptions) {
+  return filterInvoicesByPeriod(year, options).filter(
+    (inv) => inv.status === "Paid"
+  );
 }
 
 export function getMonthlyRevenue(
   year: number,
-  branchId?: number | null
+  options?: RevenueFilterOptions
 ): MonthlyRevenuePoint[] {
   const result: MonthlyRevenuePoint[] = Array.from({ length: 12 }, (_, i) => ({
     x: i + 1,
     y: 0,
   }));
-  const list = filterInvoicesByYearBranch(year, branchId);
+  const list = getPaidInvoices(year, options);
   for (const inv of list) {
     const m = new Date(inv.created_at).getMonth();
     result[m].y += inv.total_amount;
@@ -68,12 +106,12 @@ export function getMonthlyRevenue(
 
 export function getRevenueByService(
   year: number,
-  branchId?: number | null
+  options?: RevenueFilterOptions
 ): ServiceRevenueRow[] {
   // Build a map service_id -> {amount, qty}
   const totals = new Map<number, { amount: number; qty: number }>();
   // Use only PAID invoices in year and (optional) branch
-  const paid = filterInvoicesByYearBranch(year, branchId);
+  const paid = getPaidInvoices(year, options);
   const paidServiceBookingIds = new Set(
     paid
       .filter((i) => i.service_booking_id)
@@ -106,10 +144,10 @@ export function getRevenueByService(
 
 export function getRevenueByCourt(
   year: number,
-  branchId?: number | null
+  options?: RevenueFilterOptions
 ): CourtRevenueRow[] {
   const totals = new Map<number, number>(); // court_id -> amount
-  const list = filterInvoicesByYearBranch(year, branchId);
+  const list = getPaidInvoices(year, options);
   for (const inv of list) {
     if (inv.court_booking_id) {
       const booking = courtBookings.find((b) => b.id === inv.court_booking_id);

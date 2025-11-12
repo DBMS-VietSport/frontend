@@ -11,3 +11,5 @@ export * from "./invoiceRepo";
 export * from "./scheduleRepo";
 export * from "./payrollRepo";
 export * from "./leaveRequestRepo";
+export * from "./branchSettingsRepo";
+export * from "./employeeReportRepo";

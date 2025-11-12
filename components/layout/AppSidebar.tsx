@@ -23,6 +23,10 @@ import {
   Receipt,
   Wallet,
   UserRound,
+  FileText,
+  ClipboardList,
+  TrendingUp,
+  Activity,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -95,18 +99,13 @@ const navigationGroups: NavGroup[] = [
         title: "Quản lý đặt sân",
         href: "/booking/manage",
         icon: CalendarClock,
-        roles: ["manager", "customer", "receptionist"],
+        roles: ["manager", "receptionist"],
       },
-    ],
-  },
-  {
-    label: "Vận hành",
-    items: [
       {
-        title: "Quản lý dịch vụ",
-        href: "/services",
-        icon: Package,
-        roles: ["manager"],
+        title: "Lịch sử đặt sân",
+        href: "/booking/manage",
+        icon: CalendarClock,
+        roles: ["customer"],
       },
       {
         title: "Quản lý khách hàng",
@@ -114,6 +113,28 @@ const navigationGroups: NavGroup[] = [
         icon: Users,
         roles: ["manager"],
       },
+    ],
+  },
+  {
+    label: "Hóa đơn",
+    items: [
+      {
+        title: "Tạo hóa đơn",
+        href: "/invoices/create",
+        icon: Receipt,
+        roles: ["manager", "cashier"],
+      },
+      {
+        title: "Quản lý hóa đơn",
+        href: "/invoices/manage",
+        icon: FileText,
+        roles: ["manager", "cashier"],
+      },
+    ],
+  },
+  {
+    label: "Cơ sở",
+    items: [
       {
         title: "Quản lý nhân viên",
         href: "/employees",
@@ -127,22 +148,44 @@ const navigationGroups: NavGroup[] = [
         roles: ["manager", "technical"],
       },
       {
-        title: "Bảo trì kỹ thuật",
-        href: "/technician",
-        icon: Wrench,
+        title: "Quản lý dịch vụ",
+        href: "/services",
+        icon: Package,
+        roles: ["manager"],
+      },
+      {
+        title: "Cấu hình hệ thống",
+        href: "/settings",
+        icon: Settings,
+        roles: ["manager", "admin"],
+      },
+    ],
+  },
+  {
+    label: "Bảo trì",
+    items: [
+      {
+        title: "Lịch bảo trì",
+        href: "/technician/schedule",
+        icon: CalendarCheck,
         roles: ["technical", "manager"],
       },
+      {
+        title: "Báo cáo bảo trì",
+        href: "/technician/reports",
+        icon: ClipboardList,
+        roles: ["technical", "manager"],
+      },
+    ],
+  },
+  {
+    label: "Huấn luyện",
+    items: [
       {
         title: "Lịch huấn luyện",
         href: "/trainer",
         icon: UserRound,
         roles: ["trainer"],
-      },
-      {
-        title: "Hóa đơn",
-        href: "/invoices",
-        icon: Receipt,
-        roles: ["manager", "cashier"],
       },
     ],
   },
@@ -168,7 +211,25 @@ const navigationGroups: NavGroup[] = [
     items: [
       {
         title: "Báo cáo doanh thu",
-        href: "/reports",
+        href: "/reports/revenue",
+        icon: TrendingUp,
+        roles: ["manager", "admin"],
+      },
+      {
+        title: "Báo cáo sử dụng sân",
+        href: "/reports/courts",
+        icon: Activity,
+        roles: ["manager", "admin"],
+      },
+      {
+        title: "Báo cáo khách hàng",
+        href: "/reports/customers",
+        icon: Users,
+        roles: ["manager", "admin"],
+      },
+      {
+        title: "Báo cáo nhân viên",
+        href: "/reports/employee",
         icon: BarChart3,
         roles: ["manager", "admin"],
       },
@@ -178,10 +239,10 @@ const navigationGroups: NavGroup[] = [
     label: "Hệ thống",
     items: [
       {
-        title: "Cấu hình",
+        title: "Cấu hình tham số chi nhánh",
         href: "/settings",
         icon: Settings,
-        roles: ["admin"],
+        roles: ["manager", "admin"],
       },
     ],
   },
