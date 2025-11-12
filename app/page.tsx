@@ -17,7 +17,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { BranchPricing } from "./(public)/_components/BranchPricing";
+import { BranchPricing } from "@/components/public/BranchPricing";
 
 /**
  * Root page - handles routing based on auth status

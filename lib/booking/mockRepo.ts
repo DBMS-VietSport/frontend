@@ -31,7 +31,6 @@ export const mockCourtTypes: CourtType[] = [
   { id: 2, name: "Bóng rổ", rent_duration: 60 },
   { id: 3, name: "Tennis", rent_duration: 120 },
   { id: 4, name: "Bóng đá mini", rent_duration: 90 },
-  { id: 5, name: "Futsal", rent_duration: 90 },
 ];
 
 // Courts
@@ -59,8 +58,8 @@ export const mockCourts: Court[] = [
   },
   {
     id: 4,
-    name: "Sân Futsal 1",
-    court_type_id: 5,
+    name: "Sân Bóng đá mini 1",
+    court_type_id: 4,
     branch_id: 1,
     base_hourly_price: 200000,
   },
@@ -73,8 +72,8 @@ export const mockCourts: Court[] = [
   },
   {
     id: 6,
-    name: "Sân Futsal 1",
-    court_type_id: 5,
+    name: "Sân Bóng đá mini 1",
+    court_type_id: 4,
     branch_id: 3,
     base_hourly_price: 150000,
   },
@@ -156,8 +155,18 @@ export const mockServices: Service[] = [
     unit: "Giờ",
     rental_type: "Nhân sự",
   },
-  { id: 6, name: "Trọng tài Futsal", unit: "Trận", rental_type: "Nhân sự" },
-  { id: 7, name: "Thuê bóng Futsal", unit: "Lần", rental_type: "Dụng cụ" },
+  {
+    id: 6,
+    name: "Trọng tài Bóng đá mini",
+    unit: "Trận",
+    rental_type: "Nhân sự",
+  },
+  {
+    id: 7,
+    name: "Thuê bóng Bóng đá mini",
+    unit: "Lần",
+    rental_type: "Dụng cụ",
+  },
 ];
 
 // Branch Services
@@ -345,6 +354,220 @@ let mockInvoices: Invoice[] = [
 // Auto-increment IDs
 let nextSlotId = 100;
 let nextServiceItemId = 100;
+let nextBookingId =
+  (mockCourtBookings.length > 0
+    ? Math.max(...mockCourtBookings.map((b) => b.id))
+    : 0) + 1;
+let nextInvoiceId =
+  (mockInvoices.length > 0
+    ? Math.max(...mockInvoices.map((inv) => inv.id))
+    : 0) + 1;
+let nextServiceBookingId =
+  (mockServiceBookings.length > 0
+    ? Math.max(...mockServiceBookings.map((sb) => sb.id))
+    : 0) + 1;
+
+/**
+ * Generate random bookings for testing
+ */
+function generateRandomBookings(count: number): {
+  bookings: CourtBooking[];
+  slots: BookingSlot[];
+  invoices: Invoice[];
+  serviceBookings: ServiceBooking[];
+  serviceItems: ServiceBookingItem[];
+} {
+  const bookings: CourtBooking[] = [];
+  const slots: BookingSlot[] = [];
+  const invoices: Invoice[] = [];
+  const serviceBookings: ServiceBooking[] = [];
+  const serviceItems: ServiceBookingItem[] = [];
+
+  const statuses: Array<"Paid" | "Held" | "Booked" | "Cancelled" | "Pending"> =
+    ["Paid", "Held", "Booked", "Cancelled", "Pending"];
+  const types: Array<"Online" | "Direct"> = ["Online", "Direct"];
+  const paymentMethods = ["Bank Transfer", "Counter", "Cash", "Credit Card"];
+
+  const now = new Date();
+  const startDate = new Date(now);
+  startDate.setDate(startDate.getDate() - 30); // 30 days ago
+  const endDate = new Date(now);
+  endDate.setDate(endDate.getDate() + 30); // 30 days ahead
+
+  for (let i = 0; i < count; i++) {
+    const bookingId = nextBookingId++;
+    const status = statuses[Math.floor(Math.random() * statuses.length)];
+    const type = types[Math.floor(Math.random() * types.length)];
+    const customer =
+      mockCustomers[Math.floor(Math.random() * mockCustomers.length)];
+    const court = mockCourts[Math.floor(Math.random() * mockCourts.length)];
+    const employee =
+      type === "Direct" && Math.random() > 0.3
+        ? mockEmployees[Math.floor(Math.random() * mockEmployees.length)]
+        : null;
+
+    // Random date between startDate and endDate for booking creation
+    const randomTime =
+      startDate.getTime() +
+      Math.random() * (endDate.getTime() - startDate.getTime());
+    const createdAt = new Date(randomTime);
+    createdAt.setHours(
+      Math.floor(Math.random() * 12) + 8,
+      Math.floor(Math.random() * 60),
+      0,
+      0
+    );
+
+    // Generate 1-3 slots
+    const numSlots = Math.floor(Math.random() * 3) + 1;
+    const bookingSlots: BookingSlot[] = [];
+
+    // Slot date can be different from created_at (but usually close)
+    // Random slot date between created_at and 7 days after
+    const slotDateOffset = Math.floor(Math.random() * 7) - 2; // -2 to +5 days
+    const slotDate = new Date(createdAt);
+    slotDate.setDate(slotDate.getDate() + slotDateOffset);
+
+    // First slot time (between 6:00 and 20:00)
+    const firstSlotHour = Math.floor(Math.random() * 14) + 6;
+    const firstSlotMinute = Math.floor(Math.random() * 4) * 15; // 0, 15, 30, 45
+    slotDate.setHours(firstSlotHour, firstSlotMinute, 0, 0);
+
+    // Get court type duration
+    const courtType = mockCourtTypes.find(
+      (ct) => ct.id === court.court_type_id
+    );
+    const slotDuration = courtType?.rent_duration || 60; // minutes
+
+    for (let j = 0; j < numSlots; j++) {
+      const slotStart = new Date(slotDate);
+      slotStart.setMinutes(slotStart.getMinutes() + j * slotDuration);
+
+      const slotEnd = new Date(slotStart);
+      slotEnd.setMinutes(slotEnd.getMinutes() + slotDuration);
+
+      const slot: BookingSlot = {
+        id: nextSlotId++,
+        start_time: slotStart.toISOString(),
+        end_time: slotEnd.toISOString(),
+        status: status,
+        court_booking_id: bookingId,
+      };
+
+      bookingSlots.push(slot);
+      slots.push(slot);
+    }
+
+    const booking: CourtBooking = {
+      id: bookingId,
+      created_at: createdAt.toISOString(),
+      type: type,
+      status: status,
+      customer_id: customer.id,
+      employee_id: employee?.id || null,
+      court_id: court.id,
+      slots: bookingSlots,
+    };
+
+    bookings.push(booking);
+
+    // Generate invoice (70% chance)
+    if (Math.random() > 0.3) {
+      const hasServiceBooking = Math.random() > 0.7; // 30% chance
+      let serviceBookingId: number | null = null;
+
+      if (hasServiceBooking) {
+        const serviceBooking: ServiceBooking = {
+          id: nextServiceBookingId++,
+          status: status,
+          court_booking_id: bookingId,
+        };
+        serviceBookings.push(serviceBooking);
+        serviceBookingId = serviceBooking.id;
+
+        // Add 1-3 service items
+        const numServiceItems = Math.floor(Math.random() * 3) + 1;
+        const branchServices = mockBranchServices.filter(
+          (bs) => bs.branch_id === court.branch_id
+        );
+
+        if (branchServices.length > 0) {
+          const bookingServiceItems: ServiceBookingItem[] = [];
+          for (let k = 0; k < numServiceItems; k++) {
+            const branchService =
+              branchServices[Math.floor(Math.random() * branchServices.length)];
+            const quantity = Math.floor(Math.random() * 3) + 1;
+
+            const serviceItem: ServiceBookingItem = {
+              id: nextServiceItemId++,
+              quantity: quantity,
+              start_time: bookingSlots[0].start_time,
+              end_time: bookingSlots[bookingSlots.length - 1].end_time,
+              service_booking_id: serviceBooking.id,
+              branch_service_id: branchService.id,
+            };
+
+            bookingServiceItems.push(serviceItem);
+            serviceItems.push(serviceItem);
+          }
+
+          // Invoice for service booking (calculate after all items are added)
+          const serviceTotal = bookingServiceItems.reduce((sum, item) => {
+            const branchService = mockBranchServices.find(
+              (bs) => bs.id === item.branch_service_id
+            );
+            return sum + (branchService?.unit_price || 0) * item.quantity;
+          }, 0);
+
+          if (serviceTotal > 0) {
+            const serviceInvoice: Invoice = {
+              id: nextInvoiceId++,
+              total_amount: serviceTotal,
+              payment_method:
+                paymentMethods[
+                  Math.floor(Math.random() * paymentMethods.length)
+                ],
+              status: status === "Paid" ? "Paid" : "Pending",
+              court_booking_id: null,
+              service_booking_id: serviceBooking.id,
+              created_at: new Date(
+                createdAt.getTime() + 5 * 60000
+              ).toISOString(),
+            };
+            invoices.push(serviceInvoice);
+          }
+        }
+      }
+
+      // Invoice for court booking
+      const courtFee =
+        court.base_hourly_price *
+        (numSlots * (slotDuration / 60)) *
+        (Math.random() * 0.3 + 0.85); // Random variation 85-115%
+      const courtInvoice: Invoice = {
+        id: nextInvoiceId++,
+        total_amount: Math.round(courtFee),
+        payment_method:
+          paymentMethods[Math.floor(Math.random() * paymentMethods.length)],
+        status: status === "Paid" ? "Paid" : "Pending",
+        court_booking_id: bookingId,
+        service_booking_id: null,
+        created_at: new Date(createdAt.getTime() + 5 * 60000).toISOString(),
+      };
+      invoices.push(courtInvoice);
+    }
+  }
+
+  return { bookings, slots, invoices, serviceBookings, serviceItems };
+}
+
+// Generate 50 random bookings
+const randomData = generateRandomBookings(50);
+mockCourtBookings.push(...randomData.bookings);
+mockBookingSlots.push(...randomData.slots);
+mockInvoices.push(...randomData.invoices);
+mockServiceBookings.push(...randomData.serviceBookings);
+mockServiceBookingItems.push(...randomData.serviceItems);
 
 // Repository functions
 export async function listBookings(): Promise<CourtBooking[]> {

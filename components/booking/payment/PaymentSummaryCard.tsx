@@ -57,9 +57,8 @@ export function PaymentSummaryCard({
   const selectedCoaches = coaches.filter((c) => c.quantity > 0);
 
   const getButtonText = () => {
-    if (paymentMethod === "online") {
-      return "Tôi đã thanh toán";
-    }
+    // For online payment, the confirmation is handled elsewhere → no primary button here
+    if (paymentMethod === "online") return "";
     if (paymentMethod === "counter" && depositRequired) {
       return "Tôi đã đặt cọc";
     }
@@ -180,13 +179,15 @@ export function PaymentSummaryCard({
 
         {/* Actions */}
         <div className="space-y-3">
-          <Button
-            onClick={onContinue}
-            className="w-full h-12 text-base font-semibold"
-            size="lg"
-          >
-            {getButtonText()}
-          </Button>
+          {getButtonText() && (
+            <Button
+              onClick={onContinue}
+              className="w-full h-12 text-base font-semibold"
+              size="lg"
+            >
+              {getButtonText()}
+            </Button>
+          )}
 
           <Button variant="ghost" onClick={onBack} className="w-full" size="lg">
             <ArrowLeft className="mr-2 h-4 w-4" />

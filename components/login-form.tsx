@@ -44,14 +44,28 @@ export function LoginForm({
 
   const onSubmit = async (data: LoginFormData) => {
     try {
+      // Find user to check role before redirecting
+      const foundUser = MOCK_USERS.find(
+        (u) => u.username === data.username && u.password === data.password
+      );
+
+      if (!foundUser) {
+        throw new Error("Tên đăng nhập hoặc mật khẩu không đúng");
+      }
+
       // Use the mock auth login
       login(data.username, data.password);
 
       toast.success("Đăng nhập thành công!");
 
-      // Redirect to dashboard
+      // Redirect based on user role
       setTimeout(() => {
-        router.push("/dashboard");
+        if (foundUser.role === "customer") {
+          router.push("/dashboard");
+        } else {
+          // For employees (admin, manager, receptionist, cashier, technical, trainer)
+          router.push("/my-schedule");
+        }
       }, 500);
     } catch (error) {
       const message =

@@ -93,7 +93,7 @@ export function FilterBar({ filters, onFiltersChange }: FilterBarProps) {
               variant="ghost"
               size="sm"
               onClick={handleClearFilters}
-              className="h-8"
+              className="h-7"
             >
               <X className="h-4 w-4 mr-2" />
               Xóa bộ lọc

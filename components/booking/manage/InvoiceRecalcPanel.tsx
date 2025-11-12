@@ -17,6 +17,9 @@ interface InvoiceRecalcPanelProps {
   onSave: () => void;
   onCancel: () => void;
   isSaving?: boolean;
+  onCancelBooking?: () => void;
+  bookingStatus?: string;
+  bookingId?: number;
 }
 
 export function InvoiceRecalcPanel({
@@ -26,6 +29,9 @@ export function InvoiceRecalcPanel({
   onSave,
   onCancel,
   isSaving = false,
+  onCancelBooking,
+  bookingStatus,
+  bookingId,
 }: InvoiceRecalcPanelProps) {
   const courtFeeChanged = oldCalculation.courtFee !== newCalculation.courtFee;
   const serviceFeeChanged =
@@ -166,10 +172,30 @@ export function InvoiceRecalcPanel({
           variant="outline"
           className="w-full"
           size="lg"
+          disabled={isSaving}
         >
           <X className="h-4 w-4 mr-2" />
           Hủy
         </Button>
+
+        {/* Cancel Booking Button */}
+        {onCancelBooking && (
+          <div className="pt-4 border-t">
+            <Button
+              variant="destructive"
+              className="w-full"
+              size="lg"
+              onClick={onCancelBooking}
+              disabled={
+                isSaving ||
+                bookingStatus === "Paid" ||
+                bookingStatus === "Cancelled"
+              }
+            >
+              Hủy phiếu đặt sân
+            </Button>
+          </div>
+        )}
       </div>
     </Card>
   );

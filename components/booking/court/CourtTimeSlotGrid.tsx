@@ -16,16 +16,23 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { generateTimeSlots } from "../mockData";
 import type { Court, CourtType, TimeSlot } from "../types";
+import { useAuth } from "@/lib/auth/useAuth";
 
 interface CourtTimeSlotGridProps {
   court: Court | null;
   courtType: CourtType | null;
   selectedDate: Date;
   selectedSlots?: TimeSlot[];
-  isEmployee?: boolean;
   onSlotSelect: (slot: TimeSlot) => void;
 }
 
@@ -34,16 +41,22 @@ export function CourtTimeSlotGrid({
   courtType,
   selectedDate,
   selectedSlots = [],
-  isEmployee = false,
   onSlotSelect,
 }: CourtTimeSlotGridProps) {
+  const { user } = useAuth();
+  const isEmployee = user?.role !== "customer";
   const [dialogSlot, setDialogSlot] = React.useState<TimeSlot | null>(null);
   const [dialogOpen, setDialogOpen] = React.useState(false);
+  const [status, setStatus] = React.useState<
+    "all" | "available" | "booked" | "pending" | "past"
+  >("all");
 
   const timeSlots = React.useMemo(() => {
     if (!courtType) return [];
-    return generateTimeSlots(courtType, selectedDate);
-  }, [courtType, selectedDate]);
+    const slots = generateTimeSlots(courtType, selectedDate);
+    if (status === "all") return slots;
+    return slots.filter((s) => s.status === status);
+  }, [courtType, selectedDate, status]);
 
   if (!court || !courtType) {
     return (
@@ -111,15 +124,26 @@ export function CourtTimeSlotGrid({
       </Button>
     );
 
-    if (isEmployee && slot.status === "booked" && slot.bookedBy) {
+    if (
+      isEmployee &&
+      (slot.status === "booked" || slot.status === "pending") &&
+      (slot.bookedBy || slot.phone || slot.email)
+    ) {
       return (
         <TooltipProvider delayDuration={200}>
           <Tooltip>
             <TooltipTrigger asChild>{button}</TooltipTrigger>
             <TooltipContent>
               <div className="space-y-1">
-                <p className="font-semibold">{slot.bookedBy}</p>
-                <p className="text-sm text-muted-foreground">{slot.phone}</p>
+                {slot.bookedBy && (
+                  <p className="font-semibold">{slot.bookedBy}</p>
+                )}
+                {slot.phone && (
+                  <p className="text-sm text-muted-foreground">{slot.phone}</p>
+                )}
+                {slot.email && (
+                  <p className="text-sm text-muted-foreground">{slot.email}</p>
+                )}
               </div>
             </TooltipContent>
           </Tooltip>
@@ -137,6 +161,27 @@ export function CourtTimeSlotGrid({
           Lịch trống - {court.name} ({courtType.name})
         </h3>
         <div className="flex items-center gap-4 text-sm">
+          <div className="min-w-40">
+            <Select
+              value={status}
+              onValueChange={(v) =>
+                setStatus(
+                  v as "all" | "available" | "booked" | "pending" | "past"
+                )
+              }
+            >
+              <SelectTrigger aria-label="Tình trạng sân">
+                <SelectValue placeholder="Tình trạng sân" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Tất cả</SelectItem>
+                <SelectItem value="available">Trống</SelectItem>
+                <SelectItem value="booked">Đã đặt</SelectItem>
+                <SelectItem value="pending">Chờ xác nhận</SelectItem>
+                <SelectItem value="past">Đã qua</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
           <div className="flex items-center gap-2">
             <div className="w-4 h-4 bg-white border-2 border-gray-300 rounded" />
             <span>Trống</span>

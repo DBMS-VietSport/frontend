@@ -26,25 +26,52 @@ export function formatVND(n: number): string {
 
 /**
  * Get court image URL based on court type
+ * Uses images from public/ folder
  */
 export function getCourtImageUrl(courtTypeName: string): string {
+  // Normalize the input: trim whitespace and handle empty/undefined
+  const normalizedName = (courtTypeName || "").trim();
+
+  if (!normalizedName) {
+    return "/badminton-court.jpg";
+  }
+
   const imageMap: Record<string, string> = {
-    "Cầu lông":
-      "https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?w=500&h=300&fit=crop",
-    "Bóng rổ":
-      "https://images.unsplash.com/photo-1546519638-68e109498ffc?w=500&h=300&fit=crop",
-    Tennis:
-      "https://images.unsplash.com/photo-1554068865-24cecd4e34b8?w=500&h=300&fit=crop",
-    "Bóng đá mini":
-      "https://images.unsplash.com/photo-1459865264687-595d652de67e?w=500&h=300&fit=crop",
-    Futsal:
-      "https://images.unsplash.com/photo-1459865264687-595d652de67e?w=500&h=300&fit=crop",
+    "Cầu lông": "/badminton-court.jpg",
+    "Bóng rổ": "/basketball-court.jpg",
+    Tennis: "/tennis-court.jpg",
+    "Bóng đá mini": "/soccer-sourt.jpg",
   };
 
-  return (
-    imageMap[courtTypeName] ||
-    "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=500&h=300&fit=crop"
-  );
+  // Direct match (exact)
+  if (imageMap[normalizedName]) {
+    return imageMap[normalizedName];
+  }
+
+  // Case-insensitive match
+  const lowerName = normalizedName.toLowerCase();
+  for (const [key, value] of Object.entries(imageMap)) {
+    if (key.toLowerCase() === lowerName) {
+      return value;
+    }
+  }
+
+  // Fallback based on partial match (more flexible)
+  if (lowerName.includes("cầu lông") || lowerName.includes("badminton")) {
+    return "/badminton-court.jpg";
+  }
+  if (lowerName.includes("bóng rổ") || lowerName.includes("basketball")) {
+    return "/basketball-court.jpg";
+  }
+  if (lowerName.includes("tennis")) {
+    return "/tennis-court.jpg";
+  }
+  if (lowerName.includes("bóng đá") || lowerName.includes("soccer")) {
+    return "/soccer-sourt.jpg";
+  }
+
+  // Default fallback
+  return "/badminton-court.jpg";
 }
 
 /**

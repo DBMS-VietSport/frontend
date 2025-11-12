@@ -47,8 +47,18 @@ export function ServiceSummaryCard({
     services.forEach((service) => {
       if (service.quantity > 0 && service.unit !== "free") {
         if (service.unit === "hour") {
-          total +=
-            service.price * service.quantity * (service.durationHours || 1);
+          // For hour-based equipment with hourEntries, sum all hours
+          if (service.hourEntries && service.hourEntries.length > 0) {
+            const totalHours = service.hourEntries.reduce(
+              (sum, entry) => sum + entry.hours,
+              0
+            );
+            total += service.price * totalHours;
+          } else {
+            // Fallback to durationHours for backward compatibility
+            total +=
+              service.price * service.quantity * (service.durationHours || 1);
+          }
         } else {
           total += service.price * service.quantity;
         }
@@ -61,9 +71,10 @@ export function ServiceSummaryCard({
   const calculateCoachTotal = () => {
     let total = 0;
     coaches.forEach((coach) => {
-      if (coach.quantity > 0) {
-        total +=
-          coach.pricePerHour * coach.quantity * (coach.durationHours || 1);
+      // For coaches, quantity represents hours
+      const coachHours = coach.quantity || 0;
+      if (coachHours > 0) {
+        total += coach.pricePerHour * coachHours;
       }
     });
     return total;
@@ -137,26 +148,38 @@ export function ServiceSummaryCard({
               </p>
               {selectedServices.map((service) => {
                 let itemTotal = 0;
+                let displayText = service.name;
+
                 if (service.unit !== "free") {
                   if (service.unit === "hour") {
-                    itemTotal =
-                      service.price *
-                      service.quantity *
-                      (service.durationHours || 1);
+                    // For hour-based equipment with hourEntries
+                    if (service.hourEntries && service.hourEntries.length > 0) {
+                      const totalHours = service.hourEntries.reduce(
+                        (sum, entry) => sum + entry.hours,
+                        0
+                      );
+                      itemTotal = service.price * totalHours;
+                      displayText = `${service.name} (${totalHours}h)`;
+                    } else {
+                      // Fallback
+                      const hours = service.durationHours || 1;
+                      itemTotal = service.price * service.quantity * hours;
+                      displayText = `${service.name} × ${service.quantity} (${hours}h)`;
+                    }
                   } else {
                     itemTotal = service.price * service.quantity;
+                    displayText = `${service.name} × ${service.quantity}`;
                   }
+                } else {
+                  displayText = `${service.name} × ${service.quantity}`;
                 }
+
                 return (
                   <div
                     key={service.id}
                     className="flex items-center justify-between text-sm"
                   >
-                    <span>
-                      {service.name} × {service.quantity}
-                      {service.unit === "hour" &&
-                        ` (${service.durationHours || 1}h)`}
-                    </span>
+                    <span>{displayText}</span>
                     {service.unit !== "free" && (
                       <span className="font-semibold">
                         {formatCurrency(itemTotal)}
@@ -175,17 +198,17 @@ export function ServiceSummaryCard({
                 Huấn luyện viên:
               </p>
               {selectedCoaches.map((coach) => {
+                // For coaches, quantity represents hours
+                const coachHours = coach.quantity || 0;
                 const coachTotal =
-                  coach.pricePerHour *
-                  coach.quantity *
-                  (coach.durationHours || 1);
+                  coachHours > 0 ? coach.pricePerHour * coachHours : 0;
                 return (
                   <div
                     key={coach.id}
                     className="flex items-center justify-between text-sm"
                   >
                     <span>
-                      {coach.name} × {coach.quantity}h
+                      {coach.name} ({coachHours}h)
                     </span>
                     <span className="font-semibold">
                       {formatCurrency(coachTotal)}
