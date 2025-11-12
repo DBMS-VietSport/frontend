@@ -3,9 +3,13 @@ import {
   customerLevels,
   invoices,
   courtBookings,
-  courts,
-  branches,
+  serviceBookings,
 } from "@/lib/mock";
+
+export interface CustomerFilterOptions {
+  month?: number | null;
+  quarter?: number | null;
+}
 
 export interface MonthlyNewCustomersPoint {
   x: number; // month 1..12
@@ -26,24 +30,57 @@ export interface LevelDistributionRow {
   count: number;
 }
 
+export interface CustomerRevenueSummary {
+  totalRevenue: number;
+  activeCustomers: number;
+}
+
 function isSameYear(dateIso: string, year: number) {
   const d = new Date(dateIso);
   return d.getFullYear() === year;
 }
 
-function filterInvoicesByYearBranch(year: number, branchId?: number | null) {
-  return invoices.filter((inv) => {
-    if (inv.status !== "Paid") return false;
-    if (!isSameYear(inv.created_at, year)) return false;
-    if (!branchId) return true;
-    // derive branch from court of the court booking
-    if (inv.court_booking_id) {
-      const booking = courtBookings.find((b) => b.id === inv.court_booking_id);
-      const court = courts.find((c) => c.id === booking?.court_id);
-      return court?.branch_id === branchId;
-    }
+function isMonthInQuarter(month: number, quarter: number) {
+  const start = (quarter - 1) * 3 + 1;
+  const end = start + 2;
+  return month >= start && month <= end;
+}
+
+function matchesPeriod(
+  dateIso: string,
+  year: number,
+  options?: CustomerFilterOptions
+) {
+  const d = new Date(dateIso);
+  if (d.getFullYear() !== year) return false;
+  const month = d.getMonth() + 1;
+  if (options?.month && month !== options.month) return false;
+  if (
+    !options?.month &&
+    options?.quarter &&
+    !isMonthInQuarter(month, options.quarter)
+  )
     return false;
-  });
+  return true;
+}
+
+function resolveCustomerIdFromInvoice(inv: (typeof invoices)[number]) {
+  if (inv.court_booking_id) {
+    const booking = courtBookings.find((b) => b.id === inv.court_booking_id);
+    if (booking) return booking.customer_id;
+  }
+  if (inv.service_booking_id) {
+    const service = serviceBookings.find(
+      (s) => s.id === inv.service_booking_id
+    );
+    if (service) {
+      const booking = courtBookings.find(
+        (b) => b.id === service.court_booking_id
+      );
+      if (booking) return booking.customer_id;
+    }
+  }
+  return null;
 }
 
 export function getNewCustomersByMonth(
@@ -68,14 +105,16 @@ export function getNewCustomersByMonth(
 export function getTopCustomersByRevenue(
   year: number,
   limit = 10,
-  branchId?: number | null
+  options?: CustomerFilterOptions
 ): TopCustomerRow[] {
-  const paid = filterInvoicesByYearBranch(year, branchId);
+  const paid = invoices.filter(
+    (inv) =>
+      inv.status === "Paid" && matchesPeriod(inv.created_at, year, options)
+  );
   const map = new Map<number, { amount: number; count: number }>();
   for (const inv of paid) {
-    const booking = courtBookings.find((b) => b.id === inv.court_booking_id);
-    if (!booking) continue;
-    const customerId = booking.customer_id;
+    const customerId = resolveCustomerIdFromInvoice(inv);
+    if (!customerId) continue;
     const prev = map.get(customerId) || { amount: 0, count: 0 };
     prev.amount += inv.total_amount;
     prev.count += 1;
@@ -106,4 +145,26 @@ export function getCustomerLevelDistribution(): LevelDistributionRow[] {
     level_name: lvl.name,
     count: map.get(lvl.id) || 0,
   }));
+}
+
+export function getCustomerRevenueSummary(
+  year: number,
+  options?: CustomerFilterOptions
+): CustomerRevenueSummary {
+  const paid = invoices.filter(
+    (inv) =>
+      inv.status === "Paid" && matchesPeriod(inv.created_at, year, options)
+  );
+  const totalRevenue = paid.reduce((sum, inv) => sum + inv.total_amount, 0);
+  const customerIds = new Set<number>();
+  for (const inv of paid) {
+    const customerId = resolveCustomerIdFromInvoice(inv);
+    if (customerId) {
+      customerIds.add(customerId);
+    }
+  }
+  return {
+    totalRevenue,
+    activeCustomers: customerIds.size,
+  };
 }

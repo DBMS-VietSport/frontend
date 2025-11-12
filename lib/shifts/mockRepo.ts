@@ -251,25 +251,70 @@ let workShifts: WorkShift[] = [
   },
 ];
 
-let shiftAssignments: ShiftAssignment[] = [
-  // Some sample assignments for Monday morning shift
-  { id: 1, employee_id: 1, work_shift_id: 1, status: "confirmed" },
-  { id: 2, employee_id: 3, work_shift_id: 1, status: "confirmed" },
-  { id: 3, employee_id: 7, work_shift_id: 1, status: "confirmed" },
-  { id: 4, employee_id: 8, work_shift_id: 1, status: "confirmed" },
-  { id: 5, employee_id: 11, work_shift_id: 1, status: "confirmed" },
+function pickRandom<T>(array: T[], shouldShuffle = false): T[] {
+  const items = shouldShuffle ? [...array] : array;
+  if (shouldShuffle) {
+    for (let i = items.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [items[i], items[j]] = [items[j], items[i]];
+    }
+  }
+  return items;
+}
 
-  // Monday evening shift
-  { id: 6, employee_id: 2, work_shift_id: 2, status: "confirmed" },
-  { id: 7, employee_id: 4, work_shift_id: 2, status: "confirmed" },
-  { id: 8, employee_id: 5, work_shift_id: 2, status: "confirmed" },
-  { id: 9, employee_id: 9, work_shift_id: 2, status: "confirmed" },
-  { id: 10, employee_id: 10, work_shift_id: 2, status: "confirmed" },
-  { id: 11, employee_id: 12, work_shift_id: 2, status: "confirmed" },
-  { id: 12, employee_id: 13, work_shift_id: 2, status: "confirmed" },
-];
+function generateRandomAssignments(): ShiftAssignment[] {
+  const assignments: ShiftAssignment[] = [];
+  let id = 1;
+  const statusPool: Array<ShiftAssignment["status"]> = [
+    "confirmed",
+    "confirmed",
+    "confirmed",
+    "pending",
+  ];
 
-let nextAssignmentId = 13;
+  for (const shift of workShifts) {
+    const requirements = getShiftRoleRequirements(shift);
+    for (const req of requirements) {
+      const candidates = pickRandom(
+        employees.filter((emp) => emp.role_id === req.role_id),
+        true
+      );
+      if (candidates.length === 0) continue;
+
+      // allow some random shortage to reflect reality
+      const maxAssignable = Math.min(req.required, candidates.length);
+      const shortage = Math.random() < 0.2 ? 1 : 0;
+      const toAssign = Math.max(0, maxAssignable - shortage);
+
+      for (let i = 0; i < toAssign; i++) {
+        const employee = candidates[i];
+        assignments.push({
+          id: id++,
+          employee_id: employee.id,
+          work_shift_id: shift.id,
+          status: statusPool[Math.floor(Math.random() * statusPool.length)],
+        });
+      }
+
+      // chance to mark an additional employee as cancelled/no-show
+      if (Math.random() < 0.1 && candidates[toAssign]) {
+        assignments.push({
+          id: id++,
+          employee_id: candidates[toAssign].id,
+          work_shift_id: shift.id,
+          status: "cancelled",
+          note: "Vắng ca",
+        });
+      }
+    }
+  }
+
+  return assignments;
+}
+
+let shiftAssignments: ShiftAssignment[] = generateRandomAssignments();
+
+let nextAssignmentId = shiftAssignments.length + 1;
 
 // Repository functions
 

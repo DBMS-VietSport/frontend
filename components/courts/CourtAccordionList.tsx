@@ -58,7 +58,7 @@ export function CourtAccordionList({
             </div>
           </AccordionTrigger>
           <AccordionContent className="px-6 pb-6">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {group.courts.map((court) => {
                 const imageUrl = getCourtImageUrl(court.court_type_name);
                 return (

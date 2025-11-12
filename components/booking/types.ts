@@ -37,6 +37,7 @@ export interface TimeSlot {
   status: "available" | "booked" | "pending" | "past";
   bookedBy?: string;
   phone?: string;
+  email?: string;
 }
 
 export interface BookingDetails {

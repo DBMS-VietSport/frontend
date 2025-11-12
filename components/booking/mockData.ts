@@ -141,8 +141,16 @@ export function generateTimeSlots(
       start: startStr,
       end: endStr,
       status,
-      bookedBy: status === "booked" ? "Nguyễn Văn X" : undefined,
-      phone: status === "booked" ? "0912345678" : undefined,
+      bookedBy:
+        status === "booked" || status === "pending"
+          ? "Nguyễn Văn X"
+          : undefined,
+      phone:
+        status === "booked" || status === "pending" ? "0912345678" : undefined,
+      email:
+        status === "booked" || status === "pending"
+          ? "nguyenvanx@example.com"
+          : undefined,
     });
 
     currentTime += slotDuration;
