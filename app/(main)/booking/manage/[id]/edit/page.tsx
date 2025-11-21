@@ -179,10 +179,13 @@ export default function EditBookingPage() {
     setEditedSlots(slots);
   };
 
-  const handleServiceChange = (items: any[], removedIds: number[]) => {
-    setEditedServiceItems(items);
-    setRemovedServiceIds(removedIds);
-  };
+  const handleServiceChange = React.useCallback(
+    (items: any[], removedIds: number[]) => {
+      setEditedServiceItems(items);
+      setRemovedServiceIds(removedIds);
+    },
+    []
+  );
 
   const handleSave = async () => {
     if (!booking) return;
@@ -346,7 +349,10 @@ export default function EditBookingPage() {
                     booking.slots[booking.slots.length - 1]?.end_time ||
                     new Date().toISOString()
                   }
+                  invoices={invoices}
                   onChange={handleServiceChange}
+                  bookingId={bookingId}
+                  customerId={booking.customer_id}
                 />
               </TabsContent>
             </Tabs>

@@ -90,10 +90,34 @@ const navigationGroups: NavGroup[] = [
     label: "Đặt sân",
     items: [
       {
-        title: "Đặt sân mới",
+        title: "Đặt sân",
         href: "/booking/court",
         icon: CalendarCheck,
-        roles: ["manager", "receptionist", "customer"],
+        roles: ["customer"],
+      },
+      {
+        title: "Lập phiếu đặt sân",
+        href: "/booking/court",
+        icon: CalendarCheck,
+        roles: ["receptionist"],
+      },
+      {
+        title: "Đặt dịch vụ kèm theo",
+        href: "/booking/services",
+        icon: Package,
+        roles: ["customer"],
+      },
+      {
+        title: "Lập phiếu dịch vụ",
+        href: "/booking/services",
+        icon: Package,
+        roles: ["receptionist"],
+      },
+      {
+        title: "Thanh toán",
+        href: "/booking/payment",
+        icon: Receipt,
+        roles: ["customer", "receptionist", "cashier"],
       },
       {
         title: "Quản lý đặt sân",

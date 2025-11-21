@@ -14,7 +14,6 @@ import { BookingConfirmationHeader } from "@/components/booking/confirmation/Boo
 import { BookingInfoCard } from "@/components/booking/confirmation/BookingInfoCard";
 import { BookingPaymentSummaryCard } from "@/components/booking/confirmation/BookingPaymentSummaryCard";
 import { BookingServicesCard } from "@/components/booking/confirmation/BookingServicesCard";
-import { BookingProgress } from "@/components/booking/shared/BookingProgress";
 import { Separator } from "@/components/ui/separator";
 
 function formatCurrencyVND(amount: number) {
@@ -72,18 +71,11 @@ export default function BookingConfirmationPage() {
   return (
     <div className="container mx-auto py-6 space-y-8 max-w-screen-2xl">
       {/* Page Header */}
-      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-        <div className="space-y-2">
-          <h1 className="text-3xl font-bold tracking-tight">
-            Xác nhận đặt sân
-          </h1>
-          <p className="text-muted-foreground">
-            Kiểm tra thông tin đặt sân của bạn
-          </p>
-        </div>
-        <div className="shrink-0">
-          <BookingProgress currentStep={4} />
-        </div>
+      <div className="space-y-2">
+        <h1 className="text-3xl font-bold tracking-tight">Xác nhận đặt sân</h1>
+        <p className="text-muted-foreground">
+          Kiểm tra thông tin đặt sân của bạn
+        </p>
       </div>
 
       <Separator />

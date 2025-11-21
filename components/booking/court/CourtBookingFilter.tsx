@@ -23,6 +23,7 @@ import { vi } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { mockCities, mockFacilities, mockCourtTypes } from "../mockData";
 import { useAuth } from "@/lib/auth/useAuth";
+import { CustomerSelector, type Customer } from "../shared/CustomerSelector";
 
 interface CourtBookingFilterProps {
   onFilterChange: (filters: {
@@ -31,13 +32,21 @@ interface CourtBookingFilterProps {
     courtTypeId: string;
     date: Date;
   }) => void;
+  // Customer selection props (for receptionist)
+  selectedCustomerId?: string | null;
+  onCustomerChange?: (customerId: string | null) => void;
+  customers?: Customer[];
 }
 
 export function CourtBookingFilter({
   onFilterChange,
+  selectedCustomerId,
+  onCustomerChange,
+  customers = [],
 }: CourtBookingFilterProps) {
   const { user } = useAuth();
   const isCustomer = user?.role === "customer";
+  const isReceptionist = user?.role === "receptionist";
   const [date, setDate] = React.useState<Date>(new Date());
   const [cityId, setCityId] = React.useState<string>("");
   const [facilityId, setFacilityId] = React.useState<string>("");
@@ -69,6 +78,20 @@ export function CourtBookingFilter({
     });
   }, [cityId, facilityId, courtTypeId, date, onFilterChange]);
 
+  // Calculate grid columns based on role
+  const gridCols = React.useMemo(() => {
+    if (isCustomer) {
+      // Customer: Tỉnh thành, Cơ sở, Ngày đặt, Loại sân = 4 columns
+      return "grid-cols-1 md:grid-cols-2 lg:grid-cols-4";
+    } else if (isReceptionist) {
+      // Receptionist: Cơ sở, Khách hàng, Ngày đặt, Loại sân = 4 columns
+      return "grid-cols-1 md:grid-cols-2 lg:grid-cols-4";
+    } else {
+      // Other roles: Cơ sở mặc định, Ngày đặt, Loại sân = 3 columns
+      return "grid-cols-1 md:grid-cols-2 lg:grid-cols-3";
+    }
+  }, [isCustomer, isReceptionist]);
+
   return (
     <Card className="p-6 rounded-2xl">
       <CardContent className="px-0">
@@ -76,57 +99,9 @@ export function CourtBookingFilter({
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-semibold">Bộ lọc</h3>
           </div>
-          <div
-            className={cn(
-              "grid gap-4",
-              isCustomer
-                ? "grid-cols-1 md:grid-cols-2 lg:grid-cols-4"
-                : "grid-cols-1 md:grid-cols-3 lg:grid-cols-3"
-            )}
-          >
-            {!isCustomer && (
-              <div className="space-y-2">
-                <Label>Cơ sở mặc định</Label>
-                <div
-                  aria-disabled
-                  className="rounded-md border px-3 py-2 text-sm bg-muted text-muted-foreground opacity-60 cursor-not-allowed select-none"
-                >
-                  {user?.branch ?? "N/A"}
-                </div>
-              </div>
-            )}
-
-            {/* Date Picker */}
-            <div className="space-y-2">
-              <Label htmlFor="date">Ngày đặt</Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    id="date"
-                    variant="outline"
-                    className={cn(
-                      "w-full justify-start text-left font-normal",
-                      !date && "text-muted-foreground"
-                    )}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {date
-                      ? format(date, "dd/MM/yyyy", { locale: vi })
-                      : "Chọn ngày"}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={date}
-                    onSelect={(newDate) => newDate && setDate(newDate)}
-                    initialFocus
-                  />
-                </PopoverContent>
-              </Popover>
-            </div>
-
-            {isCustomer && (
+          <div className={cn("grid gap-4", gridCols)}>
+            {/* 1. Cơ sở */}
+            {isCustomer ? (
               <>
                 {/* City */}
                 <div className="space-y-2">
@@ -166,9 +141,62 @@ export function CourtBookingFilter({
                   </Select>
                 </div>
               </>
+            ) : (
+              <div className="space-y-2">
+                <Label>Cơ sở</Label>
+                <div
+                  aria-disabled
+                  className="rounded-md border px-3 py-2 text-sm bg-muted text-muted-foreground opacity-60 cursor-not-allowed select-none"
+                >
+                  {user?.branch ?? "N/A"}
+                </div>
+              </div>
             )}
 
-            {/* Court Type */}
+            {/* 2. Khách hàng (chỉ cho receptionist) */}
+            {isReceptionist && onCustomerChange && (
+              <div className="space-y-2">
+                <Label htmlFor="customer">Khách hàng</Label>
+                <CustomerSelector
+                  value={selectedCustomerId || null}
+                  onChange={onCustomerChange}
+                  customers={customers}
+                  placeholder="Chọn khách hàng..."
+                />
+              </div>
+            )}
+
+            {/* 3. Ngày đặt */}
+            <div className="space-y-2">
+              <Label htmlFor="date">Ngày đặt</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    id="date"
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal",
+                      !date && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {date
+                      ? format(date, "dd/MM/yyyy", { locale: vi })
+                      : "Chọn ngày"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={date}
+                    onSelect={(newDate) => newDate && setDate(newDate)}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+
+            {/* 4. Loại sân */}
             <div className="space-y-2">
               <Label htmlFor="courtType">Loại sân</Label>
               <Select
