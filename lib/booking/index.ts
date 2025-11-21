@@ -1,5 +1,12 @@
-// Barrel export for booking utilities
+// Export booking flow store
+export { useBookingFlowStore } from "./useBookingFlowStore";
+export type {
+  BookingStep,
+  CourtBookingData,
+  ServiceBookingData,
+} from "./useBookingFlowStore";
+
+// Re-export existing booking utilities
 export * from "./types";
-export * from "./mockRepo";
-export * from "./selectors";
 export * from "./pricing";
+export * from "./selectors";

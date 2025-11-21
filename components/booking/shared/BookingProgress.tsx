@@ -3,18 +3,33 @@
 import * as React from "react";
 import { Check, Circle } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/lib/auth/useAuth";
 
 interface BookingProgressProps {
   currentStep: number;
 }
 
 const steps = [
-  { id: 1, label: "Đặt sân", key: "court" },
-  { id: 2, label: "Đặt dịch vụ", key: "services" },
-  { id: 3, label: "Thanh toán", key: "payment" },
+  {
+    id: 1,
+    label: { customer: "Đặt sân", receptionist: "Lập phiếu đặt sân" },
+    key: "court",
+  },
+  {
+    id: 2,
+    label: { customer: "Đặt dịch vụ", receptionist: "Lập phiếu dịch vụ" },
+    key: "services",
+  },
+  {
+    id: 3,
+    label: { customer: "Thanh toán", receptionist: "Thanh toán" },
+    key: "payment",
+  },
 ];
 
 export function BookingProgress({ currentStep }: BookingProgressProps) {
+  const { user } = useAuth();
+  const isReceptionist = user?.role === "receptionist";
   return (
     <div className="flex items-center gap-2">
       {steps.map((step, index) => {
@@ -52,7 +67,7 @@ export function BookingProgress({ currentStep }: BookingProgressProps) {
                   !isCurrent && !isCompleted && "text-muted-foreground"
                 )}
               >
-                {step.label}
+                {isReceptionist ? step.label.receptionist : step.label.customer}
               </span>
             </div>
             {index < steps.length - 1 && (

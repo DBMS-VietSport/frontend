@@ -569,6 +569,79 @@ mockInvoices.push(...randomData.invoices);
 mockServiceBookings.push(...randomData.serviceBookings);
 mockServiceBookingItems.push(...randomData.serviceItems);
 
+function ensureServiceDataForBooking(bookingId: number) {
+  const booking = mockCourtBookings.find((b) => b.id === bookingId);
+  if (!booking || booking.slots.length === 0) return;
+
+  const court = mockCourts.find((c) => c.id === booking.court_id);
+  if (!court) return;
+
+  const branchServices = mockBranchServices.filter(
+    (bs) => bs.branch_id === court.branch_id
+  );
+  if (branchServices.length === 0) return;
+
+  let serviceBooking = mockServiceBookings.find(
+    (sb) => sb.court_booking_id === bookingId
+  );
+  if (!serviceBooking) {
+    serviceBooking = {
+      id: nextServiceBookingId++,
+      status: booking.status,
+      court_booking_id: bookingId,
+    };
+    mockServiceBookings.push(serviceBooking);
+  }
+
+  const existingItems = mockServiceBookingItems.filter(
+    (item) => item.service_booking_id === serviceBooking!.id
+  );
+  if (existingItems.length === 0) {
+    const branchService =
+      branchServices[bookingId % branchServices.length] || branchServices[0];
+    const quantity = (bookingId % 3) + 1;
+    mockServiceBookingItems.push({
+      id: nextServiceItemId++,
+      quantity,
+      start_time: booking.slots[0].start_time,
+      end_time: booking.slots[booking.slots.length - 1].end_time,
+      service_booking_id: serviceBooking!.id,
+      branch_service_id: branchService.id,
+    });
+  }
+
+  const hasServiceInvoice = mockInvoices.some(
+    (inv) => inv.service_booking_id === serviceBooking!.id
+  );
+  if (!hasServiceInvoice) {
+    const serviceTotal = mockServiceBookingItems
+      .filter((item) => item.service_booking_id === serviceBooking!.id)
+      .reduce((sum, item) => {
+        const branchService = mockBranchServices.find(
+          (bs) => bs.id === item.branch_service_id
+        );
+        return sum + (branchService?.unit_price || 0) * item.quantity;
+      }, 0);
+
+    if (serviceTotal > 0) {
+      mockInvoices.push({
+        id: nextInvoiceId++,
+        total_amount: serviceTotal,
+        payment_method: "Counter",
+        status: booking.status === "Paid" ? "Paid" : "Pending",
+        court_booking_id: null,
+        service_booking_id: serviceBooking!.id,
+        created_at: booking.created_at,
+      });
+    }
+  }
+}
+
+// Ensure specific bookings always have service data (for demo/edit pages)
+[1, 2, 3, 4, 5, 10, 17].forEach((bookingId) =>
+  ensureServiceDataForBooking(bookingId)
+);
+
 // Repository functions
 export async function listBookings(): Promise<CourtBooking[]> {
   // Simulate async delay
