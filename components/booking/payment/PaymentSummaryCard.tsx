@@ -27,6 +27,9 @@ interface PaymentSummaryCardProps {
   paymentMethod: PaymentMethod;
   onContinue: () => void;
   onBack: () => void;
+  // For edit flow: show already paid and difference
+  alreadyPaid?: number;
+  isEditFlow?: boolean;
 }
 
 export function PaymentSummaryCard({
@@ -45,6 +48,8 @@ export function PaymentSummaryCard({
   paymentMethod,
   onContinue,
   onBack,
+  alreadyPaid = 0,
+  isEditFlow = false,
 }: PaymentSummaryCardProps) {
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("vi-VN", {
@@ -133,14 +138,18 @@ export function PaymentSummaryCard({
                 Chi phí
               </p>
               <div className="space-y-1 text-sm">
+                {!isEditFlow && (
+                  <div className="flex justify-between">
+                    <span>Phí sân bãi</span>
+                    <span className="font-semibold">
+                      {formatCurrency(courtFee)}
+                    </span>
+                  </div>
+                )}
                 <div className="flex justify-between">
-                  <span>Phí sân bãi</span>
-                  <span className="font-semibold">
-                    {formatCurrency(courtFee)}
+                  <span>
+                    {isEditFlow ? "Dịch vụ mới thêm" : "Dịch vụ bổ sung"}
                   </span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Dịch vụ bổ sung</span>
                   <span className="font-semibold">
                     {formatCurrency(servicesFee)}
                   </span>
@@ -152,6 +161,27 @@ export function PaymentSummaryCard({
                     {formatCurrency(grandTotal)}
                   </span>
                 </div>
+
+                {/* Edit Flow: Show already paid and difference */}
+                {isEditFlow && alreadyPaid > 0 && (
+                  <>
+                    <Separator />
+                    <div className="space-y-1 text-sm">
+                      <div className="flex justify-between text-green-600">
+                        <span>Đã thanh toán</span>
+                        <span className="font-semibold">
+                          {formatCurrency(alreadyPaid)}
+                        </span>
+                      </div>
+                      <div className="flex justify-between text-orange-600">
+                        <span>Cần thanh toán thêm</span>
+                        <span className="font-bold">
+                          {formatCurrency(grandTotal - alreadyPaid)}
+                        </span>
+                      </div>
+                    </div>
+                  </>
+                )}
 
                 {/* Deposit Info */}
                 {depositRequired && depositAmount > 0 && (

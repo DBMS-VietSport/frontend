@@ -18,6 +18,10 @@ export { ServiceSummaryCard } from "./service/ServiceSummaryCard";
 
 // Export shared components
 export { BookingProgress } from "./shared/BookingProgress";
+export { BookingSelector } from "./shared/BookingSelector";
+export { CustomerSelector } from "./shared/CustomerSelector";
+export type { CourtBookingOption } from "./shared/BookingSelector";
+export type { Customer } from "./shared/CustomerSelector";
 
 // Export payment components
 export {

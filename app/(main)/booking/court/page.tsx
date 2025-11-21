@@ -4,7 +4,6 @@ import * as React from "react";
 import { useRouter } from "next/navigation";
 import {
   CourtBookingFilter,
-  BookingProgress,
   CourtBookingSummaryCard,
   CourtSelector,
   CourtTimeSlotGrid,
@@ -12,9 +11,18 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { mockCourtTypes } from "@/components/booking/mockData";
 import type { Court, CourtType, TimeSlot } from "@/components/booking/types";
+import { useBookingFlowStore } from "@/lib/booking/useBookingFlowStore";
+import { useAuth } from "@/lib/auth/useAuth";
+import { BookingProgress } from "@/components/booking";
+import { MOCK_CUSTOMERS } from "@/lib/mock/bookingFlowMock";
 
 export default function BookingCourtPage() {
   const router = useRouter();
+  const { user } = useAuth();
+  const { setCourtBooking, setCurrentStep, setSelectedCustomerId } =
+    useBookingFlowStore();
+
+  const isReceptionist = user?.role === "receptionist";
 
   // Filter state
   const [filters, setFilters] = React.useState({
@@ -27,6 +35,9 @@ export default function BookingCourtPage() {
   // Selection state
   const [selectedCourt, setSelectedCourt] = React.useState<Court | null>(null);
   const [selectedSlots, setSelectedSlots] = React.useState<TimeSlot[]>([]);
+  const [selectedCustomer, setSelectedCustomer] = React.useState<string | null>(
+    null
+  );
 
   // Get current court type
   const currentCourtType = React.useMemo(() => {
@@ -66,18 +77,82 @@ export default function BookingCourtPage() {
   }, []);
 
   const handleContinue = React.useCallback(() => {
-    // Navigate to services page or next step
+    // Validate receptionist must select customer
+    if (isReceptionist && !selectedCustomer) {
+      alert("Vui lòng chọn khách hàng");
+      return;
+    }
+
+    if (!selectedCourt || !currentCourtType || selectedSlots.length === 0) {
+      alert("Vui lòng chọn đầy đủ thông tin đặt sân");
+      return;
+    }
+
+    // Calculate total court fee
+    const durationHours =
+      selectedSlots.length * (currentCourtType.slotDuration / 60);
+    const pricePerHour = 50000; // Mock price
+    const totalCourtFee = pricePerHour * durationHours;
+
+    // Generate booking ID
+    const bookingId = `BK-${Date.now()}`;
+
+    // Get customer info
+    const customer = isReceptionist
+      ? MOCK_CUSTOMERS.find((c) => c.id === selectedCustomer)
+      : { id: user?.username || "guest", name: user?.fullName || "Guest" };
+
+    // Save court booking to store
+    setCourtBooking({
+      id: bookingId,
+      customerId: customer?.id,
+      customerName: customer?.name,
+      courtId: selectedCourt.id,
+      courtName: selectedCourt.name,
+      courtType: currentCourtType.name,
+      facilityId: filters.facilityId,
+      facilityName: "Mock Facility", // In production, get from filter
+      date: filters.date,
+      timeSlots: selectedSlots.map((s) => ({ start: s.start, end: s.end })),
+      pricePerHour,
+      totalCourtFee,
+      status: "held",
+    });
+
+    // Save customer ID if receptionist
+    if (isReceptionist && selectedCustomer) {
+      setSelectedCustomerId(selectedCustomer);
+    }
+
+    // Move to next step
+    setCurrentStep(2);
     router.push("/booking/services");
-  }, [router]);
+  }, [
+    router,
+    isReceptionist,
+    selectedCustomer,
+    selectedCourt,
+    currentCourtType,
+    selectedSlots,
+    filters,
+    user,
+    setCourtBooking,
+    setCurrentStep,
+    setSelectedCustomerId,
+  ]);
 
   return (
     <div className="container mx-auto py-6 space-y-8 max-w-screen-2xl">
-      {/* Page Header with Progress */}
+      {/* Page Header */}
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         <div className="space-y-2">
-          <h1 className="text-3xl font-bold tracking-tight">Lịch đặt sân</h1>
+          <h1 className="text-3xl font-bold tracking-tight">
+            {isReceptionist ? "Lập phiếu đặt sân" : "Đặt sân"}
+          </h1>
           <p className="text-muted-foreground">
-            Chọn ngày, loại sân và khung giờ phù hợp với bạn
+            {isReceptionist
+              ? "Chọn khách hàng và tạo phiếu đặt sân"
+              : "Chọn ngày, loại sân và khung giờ phù hợp với bạn"}
           </p>
         </div>
         <div className="shrink-0">
@@ -87,9 +162,14 @@ export default function BookingCourtPage() {
 
       <Separator />
 
-      {/* Filters */}
+      {/* Filters - Combined with Customer Selection */}
       <section>
-        <CourtBookingFilter onFilterChange={handleFilterChange} />
+        <CourtBookingFilter
+          onFilterChange={handleFilterChange}
+          selectedCustomerId={selectedCustomer}
+          onCustomerChange={setSelectedCustomer}
+          customers={isReceptionist ? MOCK_CUSTOMERS : []}
+        />
       </section>
 
       {/* Court Selection */}
