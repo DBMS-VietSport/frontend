@@ -27,8 +27,13 @@ import {
 
 // --- Extended Mock Data Generation ---
 
+// Extended Customer type for report purposes (includes created_at)
+type CustomerWithCreatedAt = Customer & {
+  created_at?: string;
+};
+
 let cachedMockData: {
-  customers: Customer[];
+  customers: CustomerWithCreatedAt[];
   bookings: CourtBooking[];
   invoices: Invoice[];
   slots: BookingSlot[];
@@ -37,7 +42,7 @@ let cachedMockData: {
 function generateMockCustomerReportData() {
   if (cachedMockData) return cachedMockData;
 
-  const customers: Customer[] = [...baseCustomers];
+  const customers: CustomerWithCreatedAt[] = [...baseCustomers];
   const bookings: CourtBooking[] = [...baseBookings];
   const invoices: Invoice[] = [...baseInvoices];
   const slots: BookingSlot[] = [...baseSlots];
@@ -68,7 +73,6 @@ function generateMockCustomerReportData() {
       customer_level_id: level.id,
       user_id: `user${i}`,
       bonus_point: Math.floor(Math.random() * 5000),
-      // @ts-ignore - injecting created_at for report purposes
       created_at: joinDate.toISOString(),
     });
   }
@@ -83,7 +87,6 @@ function generateMockCustomerReportData() {
     const customer = customers[Math.floor(Math.random() * customers.length)];
 
     // Booking date (after customer joined)
-    // @ts-ignore
     const joinDate = customer.created_at
       ? new Date(customer.created_at)
       : startDate;
@@ -186,14 +189,14 @@ function filterData(filter: CustomerReportFilter) {
   // Usually, these filters restrict WHICH customers we look at,
   // AND Date/Branch restricts WHICH TRANSACTIONS we count for them.
 
-  let relevantCustomers = customers.filter((c) => {
+  let relevantCustomers: CustomerWithCreatedAt[] = customers.filter((c) => {
     if (
       filter.levelIds.length > 0 &&
       !filter.levelIds.includes(c.customer_level_id)
-  )
-    return false;
+    )
+      return false;
     if (filter.gender !== "All" && c.gender !== filter.gender) return false;
-  return true;
+    return true;
   });
 
   const relevantCustomerIds = new Set(relevantCustomers.map((c) => c.id));
@@ -234,9 +237,7 @@ export function getCustomerReportKPIs(filter: CustomerReportFilter) {
   if (filter.dateRange?.from && filter.dateRange?.to) {
     const { from, to } = filter.dateRange;
     newCount = customers.filter((c) => {
-      // @ts-ignore
       if (!c.created_at) return false;
-      // @ts-ignore
       const d = new Date(c.created_at);
       return isWithinInterval(d, {
         start: startOfDay(from),
@@ -245,7 +246,7 @@ export function getCustomerReportKPIs(filter: CustomerReportFilter) {
     }).length;
   } else {
     // If no date range, maybe "new this year"? Default to all created in mock generation (last 12 months)
-    newCount = customers.filter((c) => (c as any).created_at).length;
+    newCount = customers.filter((c) => c.created_at).length;
   }
 
   const totalRevenue = invoices.reduce((acc, i) => acc + i.total_amount, 0);
@@ -300,9 +301,7 @@ export function getNewCustomersTrend(filter: CustomerReportFilter) {
   return months.map((monthStart) => {
     const monthEnd = endOfMonth(monthStart);
     const count = relevantCustomers.filter((c) => {
-      // @ts-ignore
       if (!c.created_at) return false;
-      // @ts-ignore
       const d = new Date(c.created_at);
       return isWithinInterval(d, { start: monthStart, end: monthEnd });
     }).length;
@@ -342,7 +341,7 @@ export function getTopCustomers(filter: CustomerReportFilter, limit = 10) {
       .map(([id, revenue]) => {
         const c = customers.find((cx) => cx.id === id);
         if (!c) return null;
-      return {
+        return {
           name: c.full_name,
           revenue,
           id: c.id,
@@ -410,7 +409,7 @@ export function getCustomerDetailsTable(filter: CustomerReportFilter) {
     const levelName =
       customerLevels.find((l) => l.id === c.customer_level_id)?.name || "";
 
-  return {
+    return {
       id: c.id,
       full_name: c.full_name,
       email: c.email,
@@ -419,8 +418,8 @@ export function getCustomerDetailsTable(filter: CustomerReportFilter) {
       points: c.bonus_point,
       bookingCount: customerBookings.length,
       totalHours: Math.round(totalHours * 10) / 10,
-    totalRevenue,
+      totalRevenue,
       lastBooking: lastBookingDate,
-  };
+    };
   });
 }

@@ -23,7 +23,7 @@ import {
 
 // --- Extended Mock Data Generation ---
 
-export interface LeaveRequest {
+export interface EmployeeReportLeaveRequest {
   id: number;
   employee_id: number;
   start_date: string;
@@ -47,7 +47,7 @@ let cachedMockData: {
   employees: Employee[];
   workShifts: WorkShift[];
   shiftAssignments: ShiftAssignment[];
-  leaveRequests: LeaveRequest[];
+  leaveRequests: EmployeeReportLeaveRequest[];
   salaryHistory: SalaryHistory[];
   invoices: Invoice[];
 } | null = null;
@@ -58,7 +58,7 @@ function generateMockEmployeeReportData() {
   const employees: Employee[] = [...baseEmployees];
   const workShifts: WorkShift[] = [...baseWorkShifts];
   const shiftAssignments: ShiftAssignment[] = [...baseAssignments];
-  const leaveRequests: LeaveRequest[] = [];
+  const leaveRequests: EmployeeReportLeaveRequest[] = [];
   const salaryHistory: SalaryHistory[] = [];
   const invoices: Invoice[] = [...baseInvoices]; // We'll use base invoices for revenue linking
 
@@ -237,8 +237,8 @@ function filterData(filter: EmployeeReportFilter) {
       if (filter.status === "Working" && e.status !== "Active") return false;
       if (filter.status === "Inactive" && e.status !== "Inactive") return false;
       if (filter.status === "OnLeave" && e.status !== "OnLeave") return false;
-  }
-  return true;
+    }
+    return true;
   });
 
   const empIds = new Set(filteredEmployees.map((e) => e.id));
