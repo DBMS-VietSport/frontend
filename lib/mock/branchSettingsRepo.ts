@@ -3,6 +3,10 @@ import { branches } from "./data";
 export interface BranchSettings {
   id: number;
   name: string;
+  address: string;
+  hotline: string;
+  open_time: string;
+  close_time: string;
   late_time_limit: number;
   max_courts_per_day_per_user: number;
   shift_pay: number;
@@ -17,6 +21,11 @@ export interface BranchSettings {
 }
 
 export interface UpdateBranchSettingsPayload {
+  name?: string;
+  address?: string;
+  hotline?: string;
+  open_time?: string;
+  close_time?: string;
   late_time_limit?: number;
   max_courts_per_day_per_user?: number;
   shift_pay?: number;
@@ -31,17 +40,21 @@ export interface UpdateBranchSettingsPayload {
 }
 
 const DEFAULT_SETTINGS: Omit<BranchSettings, "id" | "name"> = {
+  address: "Chưa cập nhật địa chỉ",
+  hotline: "090xxxxxxx",
+  open_time: "06:00",
+  close_time: "22:00",
   late_time_limit: 15,
   max_courts_per_day_per_user: 3,
-  shift_pay: 200_000,
-  shift_absence_penalty: 50_000,
-  loyalty_point_rate: 1,
-  cancel_fee_before_24h_percent: 10,
-  cancel_fee_within_24h_percent: 50,
-  no_show_fee_percent: 100,
-  night_booking_additional_charge: 50_000,
-  holiday_booking_additional_charge: 100_000,
-  weekend_booking_additional_charge: 30_000,
+  shift_pay: 200000,
+  shift_absence_penalty: 50000,
+  loyalty_point_rate: 0.05,
+  cancel_fee_before_24h_percent: 0.1,
+  cancel_fee_within_24h_percent: 0.5,
+  no_show_fee_percent: 1.0,
+  night_booking_additional_charge: 50000,
+  holiday_booking_additional_charge: 100000,
+  weekend_booking_additional_charge: 30000,
 };
 
 const mockBranchSettings = new Map<number, BranchSettings>();
@@ -52,6 +65,10 @@ function resolveBranchSettings(branchId: number): BranchSettings {
   return {
     id: branchId,
     name: branch?.name ?? `Chi nhánh #${branchId}`,
+    address: branch?.address ?? DEFAULT_SETTINGS.address,
+    hotline: branch?.hotline ?? DEFAULT_SETTINGS.hotline,
+    open_time: DEFAULT_SETTINGS.open_time,
+    close_time: DEFAULT_SETTINGS.close_time,
     late_time_limit:
       branch?.late_time_limit ?? DEFAULT_SETTINGS.late_time_limit,
     max_courts_per_day_per_user: DEFAULT_SETTINGS.max_courts_per_day_per_user,
@@ -94,7 +111,7 @@ export async function updateBranchSettings(
   branchId: number,
   payload: UpdateBranchSettingsPayload
 ): Promise<BranchSettings> {
-  await new Promise((resolve) => setTimeout(resolve, 120));
+  await new Promise((resolve) => setTimeout(resolve, 500)); // Simulate longer delay
 
   const current =
     mockBranchSettings.get(branchId) ?? resolveBranchSettings(branchId);
