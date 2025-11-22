@@ -1,11 +1,28 @@
 "use client";
 
 import * as React from "react";
-import { Card } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
+import { format } from "date-fns";
+import { RefreshCcw, Search, ArrowUpDown, Download } from "lucide-react";
+
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
+import { Badge } from "@/components/ui/badge";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Table,
   TableBody,
@@ -14,515 +31,509 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Input } from "@/components/ui/input";
+
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { RequireRole } from "@/components/auth/RequireRole";
-import {
-  getEmployeeCountByRole,
-  getTopActiveEmployees,
-  getWorkHoursByPeriod,
-  type EmployeeRoleCount,
-  type EmployeeWorkHourRecord,
-} from "@/lib/mock/employeeReportRepo";
-import { branches } from "@/lib/mock";
-import { toast } from "sonner";
-import { Users, Layers, Clock3, Award, ArrowUpRight } from "lucide-react";
-import {
-  ResponsiveContainer,
-  BarChart as ReBarChart,
+  BarChart,
   Bar,
-  CartesianGrid,
   XAxis,
   YAxis,
+  CartesianGrid,
   Tooltip,
+  ResponsiveContainer,
+  LineChart,
+  Line,
 } from "recharts";
 
-type PeriodType = "month" | "quarter" | "year";
+import { branches, roles } from "@/lib/mock";
+import {
+  getEmployeeReportKPIs,
+  getTopEmployeesByHours,
+  getDailyWorkHours,
+  getEmployeeDetailsTable,
+  EmployeeReportFilter,
+} from "@/lib/mock/employeeReportRepo";
 
-const formatHours = (value: number) =>
-  `${value.toLocaleString("vi-VN", { maximumFractionDigits: 1 })} giờ`;
+// --- Components ---
 
-const currentDate = new Date();
-const currentYear = currentDate.getFullYear();
-const currentMonth = currentDate.getMonth() + 1;
-const currentQuarter = Math.floor((currentMonth - 1) / 3) + 1;
+const currentYear = new Date().getFullYear();
+const currentMonth = new Date().getMonth() + 1;
 
-function EmployeeReportPage() {
-  const [branchId, setBranchId] = React.useState<string>("0");
-  const [period, setPeriod] = React.useState<PeriodType>("month");
-  const [year, setYear] = React.useState<number>(currentYear);
+export default function EmployeeReportPage() {
+  // -- State --
   const [month, setMonth] = React.useState<number>(currentMonth);
-  const [quarter, setQuarter] = React.useState<number>(currentQuarter);
-  const [searchTerm, setSearchTerm] = React.useState<string>("");
+  const [year, setYear] = React.useState<number>(currentYear);
+  const [branchId, setBranchId] = React.useState<string>("0");
+  const [roleId, setRoleId] = React.useState<string>("0");
+  const [status, setStatus] = React.useState<
+    "All" | "Working" | "Inactive" | "OnLeave"
+  >("All");
+  const [searchTerm, setSearchTerm] = React.useState("");
 
-  const [roleCounts, setRoleCounts] = React.useState<EmployeeRoleCount[]>([]);
-  const [workHours, setWorkHours] = React.useState<EmployeeWorkHourRecord[]>(
-    []
-  );
-  const [topEmployees, setTopEmployees] = React.useState<
-    EmployeeWorkHourRecord[]
-  >([]);
-  const [isLoading, setIsLoading] = React.useState<boolean>(true);
+  // Sort state
+  const [sortConfig, setSortConfig] = React.useState<{
+    key: string;
+    direction: "asc" | "desc";
+  } | null>(null);
 
-  const availableYears = React.useMemo(
-    () => Array.from({ length: 5 }, (_, i) => currentYear - i),
-    []
-  );
+  const handleReset = () => {
+    setMonth(currentMonth);
+    setYear(currentYear);
+    setBranchId("0");
+    setRoleId("0");
+    setStatus("All");
+    setSearchTerm("");
+    setSortConfig(null);
+  };
 
-  const branchOptions = React.useMemo(
-    () => [
-      { id: "0", name: "Tất cả chi nhánh" },
-      ...branches.map((b) => ({ id: b.id.toString(), name: b.name })),
-    ],
-    []
-  );
-
-  const query = React.useMemo(() => {
-    const selectedBranch = branchId === "0" ? null : parseInt(branchId, 10);
-    return {
-      period,
+  // -- Data Fetching --
+  const filter: EmployeeReportFilter = React.useMemo(
+    () => ({
+      branchId: branchId === "0" ? null : parseInt(branchId),
+      roleId: roleId === "0" ? null : parseInt(roleId),
+      month,
       year,
-      month: period === "month" ? month : undefined,
-      quarter: period === "quarter" ? quarter : undefined,
-      branchId: selectedBranch,
-    };
-  }, [branchId, period, year, month, quarter]);
+      status,
+    }),
+    [branchId, roleId, month, year, status]
+  );
 
-  const loadReportData = React.useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const [roleData, workData, topData] = await Promise.all([
-        getEmployeeCountByRole({ branchId: query.branchId }),
-        getWorkHoursByPeriod(query),
-        getTopActiveEmployees({ ...query, limit: 5 }),
-      ]);
-      setRoleCounts(roleData);
-      setWorkHours(workData);
-      setTopEmployees(topData);
-    } catch (error) {
-      console.error("Failed to load employee report:", error);
-      toast.error("Không thể tải dữ liệu báo cáo nhân viên");
-    } finally {
-      setIsLoading(false);
+  const kpis = React.useMemo(() => getEmployeeReportKPIs(filter), [filter]);
+  const topEmployeesData = React.useMemo(
+    () => getTopEmployeesByHours(filter),
+    [filter]
+  );
+  const dailyHoursData = React.useMemo(
+    () => getDailyWorkHours(filter),
+    [filter]
+  );
+  const rawTableData = React.useMemo(
+    () => getEmployeeDetailsTable(filter),
+    [filter]
+  );
+
+  const tableData = React.useMemo(() => {
+    let data = [...rawTableData];
+
+    if (searchTerm) {
+      const lower = searchTerm.toLowerCase();
+      data = data.filter((r) => r.full_name.toLowerCase().includes(lower));
     }
-  }, [query]);
 
-  React.useEffect(() => {
-    loadReportData();
-  }, [loadReportData]);
-
-  const filteredWorkHours = React.useMemo(() => {
-    const term = searchTerm.trim().toLowerCase();
-    if (!term) return workHours;
-    return workHours.filter((record) =>
-      record.employeeName.toLowerCase().includes(term)
-    );
-  }, [workHours, searchTerm]);
-
-  const totalEmployees = React.useMemo(
-    () => roleCounts.reduce((sum, item) => sum + item.count, 0),
-    [roleCounts]
-  );
-  const roleUsedCount = React.useMemo(
-    () => roleCounts.filter((item) => item.count > 0).length,
-    [roleCounts]
-  );
-  const totalHours = React.useMemo(
-    () => workHours.reduce((sum, item) => sum + item.totalHours, 0),
-    [workHours]
-  );
-  const mostActiveEmployee = topEmployees[0];
-
-  const workHourSummary = React.useMemo(() => {
-    const summary = new Map<string, { roleName: string; totalHours: number }>();
-    for (const record of workHours) {
-      const current = summary.get(record.roleName) || {
-        roleName: record.roleName,
-        totalHours: 0,
-      };
-      current.totalHours += record.totalHours;
-      summary.set(record.roleName, current);
+    if (sortConfig) {
+      data.sort((a, b) => {
+        // @ts-ignore
+        const aValue = a[sortConfig.key];
+        // @ts-ignore
+        const bValue = b[sortConfig.key];
+        if (aValue < bValue) return sortConfig.direction === "asc" ? -1 : 1;
+        if (aValue > bValue) return sortConfig.direction === "asc" ? 1 : -1;
+        return 0;
+      });
     }
-    return Array.from(summary.values()).map((item) => ({
-      ...item,
-      totalHours: Math.round(item.totalHours * 10) / 10,
-    }));
-  }, [workHours]);
+
+    return data;
+  }, [rawTableData, searchTerm, sortConfig]);
+
+  const handleSort = (key: string) => {
+    setSortConfig((current) => {
+      if (current?.key === key) {
+        return { key, direction: current.direction === "asc" ? "desc" : "asc" };
+      }
+      return { key, direction: "desc" }; // Default desc for numbers usually
+    });
+  };
+
+  const formatVND = (n: number) =>
+    new Intl.NumberFormat("vi-VN", {
+      style: "currency",
+      currency: "VND",
+    }).format(n);
 
   return (
-    <div className="container mx-auto py-6 space-y-6 max-w-screen-2xl">
-      <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-        <div className="space-y-2">
+    <div className="container mx-auto py-6 space-y-8 max-w-screen-2xl">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
           <h1 className="text-3xl font-bold tracking-tight">
             Báo cáo nhân viên
           </h1>
           <p className="text-muted-foreground">
-            Thống kê theo vai trò và thời gian làm việc.
+            Quản lý hiệu suất, lương thưởng và lịch làm việc
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-3 md:justify-end">
-          <div className="space-y-1">
-            <Label className="text-xs uppercase text-muted-foreground">
-              Chi nhánh
-            </Label>
-            <Select
-              value={branchId}
-              onValueChange={(value) => setBranchId(value)}
-            >
-              <SelectTrigger className="w-[200px]">
-                <SelectValue placeholder="Chọn chi nhánh" />
-              </SelectTrigger>
-              <SelectContent>
-                {branchOptions.map((option) => (
-                  <SelectItem key={option.id} value={option.id}>
-                    {option.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-1">
-            <Label className="text-xs uppercase text-muted-foreground">
-              Kỳ báo cáo
-            </Label>
-            <Select
-              value={period}
-              onValueChange={(value: PeriodType) => setPeriod(value)}
-            >
-              <SelectTrigger className="w-[160px]">
-                <SelectValue placeholder="Chọn kỳ" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="month">Theo tháng</SelectItem>
-                <SelectItem value="quarter">Theo quý</SelectItem>
-                <SelectItem value="year">Theo năm</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          {period === "month" && (
-            <div className="space-y-1">
-              <Label className="text-xs uppercase text-muted-foreground">
-                Tháng
-              </Label>
-              <Select
-                value={month.toString()}
-                onValueChange={(value) => setMonth(parseInt(value, 10))}
-              >
-                <SelectTrigger className="w-[120px]">
-                  <SelectValue placeholder="Chọn tháng" />
-                </SelectTrigger>
-                <SelectContent>
-                  {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
-                    <SelectItem key={m} value={m.toString()}>
-                      Tháng {m}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
-          {period === "quarter" && (
-            <div className="space-y-1">
-              <Label className="text-xs uppercase text-muted-foreground">
-                Quý
-              </Label>
-              <Select
-                value={quarter.toString()}
-                onValueChange={(value) => setQuarter(parseInt(value, 10))}
-              >
-                <SelectTrigger className="w-[120px]">
-                  <SelectValue placeholder="Chọn quý" />
-                </SelectTrigger>
-                <SelectContent>
-                  {[1, 2, 3, 4].map((q) => (
-                    <SelectItem key={q} value={q.toString()}>
-                      Quý {q}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
-          <div className="space-y-1">
-            <Label className="text-xs uppercase text-muted-foreground">
-              Năm
-            </Label>
-            <Select
-              value={year.toString()}
-              onValueChange={(value) => setYear(parseInt(value, 10))}
-            >
-              <SelectTrigger className="w-[120px]">
-                <SelectValue placeholder="Chọn năm" />
-              </SelectTrigger>
-              <SelectContent>
-                {availableYears.map((y) => (
-                  <SelectItem key={y} value={y.toString()}>
-                    {y}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
+        <Button variant="outline" size="sm">
+          <Download className="mr-2 h-4 w-4" />
+          Xuất Excel
+        </Button>
       </div>
 
       <Separator />
 
-      {/* Summary cards */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Card className="p-4 rounded-2xl">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-muted-foreground">Tổng số nhân viên</p>
-              <p className="text-2xl font-bold">{totalEmployees}</p>
-            </div>
-            <div className="rounded-full bg-primary/10 p-2 text-primary">
-              <Users className="h-5 w-5" />
-            </div>
-          </div>
-        </Card>
-        <Card className="p-4 rounded-2xl">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-muted-foreground">
-                Số vai trò đang dùng
-              </p>
-              <p className="text-2xl font-bold">{roleUsedCount}</p>
-            </div>
-            <div className="rounded-full bg-primary/10 p-2 text-primary">
-              <Layers className="h-5 w-5" />
-            </div>
-          </div>
-        </Card>
-        <Card className="p-4 rounded-2xl">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-muted-foreground">
-                Tổng giờ làm kỳ này
-              </p>
-              <p className="text-2xl font-bold">{formatHours(totalHours)}</p>
-            </div>
-            <div className="rounded-full bg-primary/10 p-2 text-primary">
-              <Clock3 className="h-5 w-5" />
-            </div>
-          </div>
-        </Card>
-        <Card className="p-4 rounded-2xl">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-muted-foreground">
-                Nhân viên hoạt động nhiều nhất
-              </p>
-              <p className="text-lg font-semibold">
-                {mostActiveEmployee ? mostActiveEmployee.employeeName : "—"}
-              </p>
-              <p className="text-sm text-muted-foreground">
-                {mostActiveEmployee
-                  ? formatHours(mostActiveEmployee.totalHours)
-                  : "Chưa có dữ liệu"}
-              </p>
-            </div>
-            <div className="rounded-full bg-primary/10 p-2 text-primary">
-              <Award className="h-5 w-5" />
-            </div>
-          </div>
-        </Card>
-      </div>
-
-      <div className="grid gap-4 lg:grid-cols-2">
-        <Card className="p-6 rounded-2xl">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h2 className="text-lg font-semibold">
-                Số lượng nhân viên theo vai trò
-              </h2>
-              <p className="text-sm text-muted-foreground">
-                Dữ liệu tổng hợp theo chi nhánh đã chọn.
-              </p>
-            </div>
-          </div>
-          <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <ReBarChart data={roleCounts}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="roleName" />
-                <YAxis allowDecimals={false} />
-                <Tooltip />
-                <Bar dataKey="count" fill="#3b82f6" radius={[4, 4, 0, 0]} />
-              </ReBarChart>
-            </ResponsiveContainer>
-          </div>
-        </Card>
-
-        <Card className="p-6 rounded-2xl">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h2 className="text-lg font-semibold">
-                Nhân viên hoạt động tích cực
-              </h2>
-              <p className="text-sm text-muted-foreground">
-                Top nhân viên có số giờ làm cao nhất.
-              </p>
-            </div>
-          </div>
-          <div className="space-y-3">
-            {topEmployees.length === 0 && (
-              <p className="text-sm text-muted-foreground">
-                Chưa có dữ liệu trong kỳ được chọn.
-              </p>
-            )}
-            {topEmployees.map((employee, index) => (
-              <div
-                key={employee.employeeId}
-                className="flex items-center justify-between rounded-lg border p-3"
+      {/* Filter Bar */}
+      <Card className="p-4 rounded-xl bg-muted/40 border-none shadow-none">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+          <div className="space-y-1">
+            <label className="text-xs font-medium text-muted-foreground">
+              Tháng / Năm
+            </label>
+            <div className="flex gap-2">
+              <Select
+                value={month.toString()}
+                onValueChange={(v) => setMonth(parseInt(v))}
               >
-                <div>
-                  <p className="font-medium">
-                    {index + 1}. {employee.employeeName}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {employee.roleName} • {employee.branchName}
-                  </p>
-                </div>
-                <div className="flex items-center gap-2 text-sm font-semibold text-primary">
-                  {formatHours(employee.totalHours)}
-                  <ArrowUpRight className="h-4 w-4" />
-                </div>
-              </div>
-            ))}
+                <SelectTrigger className="w-[80px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
+                    <SelectItem key={m} value={m.toString()}>
+                      {m}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select
+                value={year.toString()}
+                onValueChange={(v) => setYear(parseInt(v))}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {[2024, 2025].map((y) => (
+                    <SelectItem key={y} value={y.toString()}>
+                      {y}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
-        </Card>
-      </div>
 
-      <Card className="p-6 rounded-2xl">
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h2 className="text-lg font-semibold">Số giờ làm theo thời gian</h2>
-            <p className="text-sm text-muted-foreground">
-              Tổng hợp theo vai trò cho kỳ đã chọn.
-            </p>
+          <div className="space-y-1">
+            <label className="text-xs font-medium text-muted-foreground">
+              Chi nhánh
+            </label>
+            <Select value={branchId} onValueChange={setBranchId}>
+              <SelectTrigger>
+                <SelectValue placeholder="Tất cả chi nhánh" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="0">Tất cả chi nhánh</SelectItem>
+                {branches.map((b) => (
+                  <SelectItem key={b.id} value={b.id.toString()}>
+                    {b.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-1">
+            <label className="text-xs font-medium text-muted-foreground">
+              Chức vụ
+            </label>
+            <Select value={roleId} onValueChange={setRoleId}>
+              <SelectTrigger>
+                <SelectValue placeholder="Tất cả chức vụ" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="0">Tất cả chức vụ</SelectItem>
+                {roles.map((r) => (
+                  <SelectItem key={r.id} value={r.id.toString()}>
+                    {r.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-1">
+            <label className="text-xs font-medium text-muted-foreground">
+              Trạng thái
+            </label>
+            <Select value={status} onValueChange={(v: any) => setStatus(v)}>
+              <SelectTrigger>
+                <SelectValue placeholder="Tất cả" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="All">Tất cả</SelectItem>
+                <SelectItem value="Working">Đang làm việc</SelectItem>
+                <SelectItem value="OnLeave">Đang nghỉ phép</SelectItem>
+                <SelectItem value="Inactive">Đã nghỉ việc</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="flex items-end">
+            <Button
+              variant="ghost"
+              onClick={handleReset}
+              size="sm"
+              className="w-full"
+            >
+              <RefreshCcw className="mr-2 h-4 w-4" />
+              Đặt lại
+            </Button>
           </div>
         </div>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Vai trò</TableHead>
-              <TableHead className="text-right">Tổng giờ</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {workHourSummary.map((item) => (
-              <TableRow key={item.roleName}>
-                <TableCell>{item.roleName}</TableCell>
-                <TableCell className="text-right">
-                  {formatHours(item.totalHours)}
-                </TableCell>
-              </TableRow>
-            ))}
-            {workHourSummary.length === 0 && (
-              <TableRow>
-                <TableCell
-                  colSpan={2}
-                  className="text-center text-muted-foreground"
-                >
-                  Chưa có dữ liệu cho kỳ đã chọn.
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
       </Card>
 
-      <Card className="p-6 rounded-2xl">
-        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between mb-4">
-          <div>
-            <h2 className="text-lg font-semibold">Chi tiết nhân viên</h2>
-            <p className="text-sm text-muted-foreground">
-              Danh sách nhân viên theo bộ lọc hiện tại.
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            <Input
-              placeholder="Tìm kiếm nhân viên..."
-              value={searchTerm}
-              onChange={(event) => setSearchTerm(event.target.value)}
-              className="w-[240px]"
-            />
-          </div>
-        </div>
-        <div className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Tên nhân viên</TableHead>
-                <TableHead>Vai trò</TableHead>
-                <TableHead>Chi nhánh</TableHead>
-                <TableHead className="text-right">Số giờ làm</TableHead>
-                <TableHead className="text-right">Số ca</TableHead>
-                <TableHead className="text-right">Ca vắng</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredWorkHours.map((record) => (
-                <TableRow key={record.employeeId}>
-                  <TableCell>{record.employeeName}</TableCell>
-                  <TableCell>{record.roleName}</TableCell>
-                  <TableCell>{record.branchName}</TableCell>
-                  <TableCell className="text-right">
-                    {formatHours(record.totalHours)}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    {record.shiftCount}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    {record.absenceCount}
-                  </TableCell>
-                </TableRow>
+      {/* KPIs */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">
+              Tổng nhân viên
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{kpis.totalEmployees}</div>
+            <div className="text-xs text-muted-foreground mt-1 flex flex-wrap gap-1">
+              {kpis.roleDistribution.map((rd) => (
+                <Badge
+                  key={rd.name}
+                  variant="secondary"
+                  className="text-[10px] px-1 py-0"
+                >
+                  {rd.name}: {rd.count}
+                </Badge>
               ))}
-              {filteredWorkHours.length === 0 && (
-                <TableRow>
-                  <TableCell
-                    colSpan={6}
-                    className="text-center text-muted-foreground"
-                  >
-                    Không có nhân viên nào khớp với tìm kiếm.
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </div>
-        {isLoading && (
-          <div className="pt-4 text-sm text-muted-foreground">
-            Đang tải dữ liệu...
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">
+              Hiệu suất làm việc
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{kpis.totalHours}h</div>
+            <p className="text-xs text-muted-foreground mt-1">
+              từ {kpis.totalShifts} ca làm việc
+            </p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">
+              Ngày nghỉ đã duyệt
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-orange-600">
+              {kpis.totalLeaveDays}
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">ngày công</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">
+              Quỹ lương thực trả
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-green-600">
+              {formatVND(kpis.totalNetPay)}
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              tháng {month}/{year}
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Charts */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>Top nhân viên chăm chỉ</CardTitle>
+            <CardDescription>Xếp hạng theo số giờ làm việc</CardDescription>
+          </CardHeader>
+          <CardContent className="h-[300px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart
+                layout="vertical"
+                data={topEmployeesData}
+                margin={{ left: 40 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" horizontal={false} />
+                <XAxis type="number" hide />
+                <YAxis
+                  dataKey="name"
+                  type="category"
+                  width={120}
+                  tick={{ fontSize: 12 }}
+                />
+                <Tooltip />
+                <Bar
+                  dataKey="hours"
+                  name="Số giờ"
+                  fill="#3b82f6"
+                  radius={[0, 4, 4, 0]}
+                />
+              </BarChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Biến động giờ làm</CardTitle>
+            <CardDescription>
+              Tổng giờ làm theo ngày trong tháng
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="h-[300px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={dailyHoursData}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                <XAxis dataKey="day" tick={{ fontSize: 12 }} interval={2} />
+                <YAxis />
+                <Tooltip />
+                <Line
+                  type="monotone"
+                  dataKey="hours"
+                  name="Giờ làm"
+                  stroke="#10b981"
+                  strokeWidth={2}
+                  dot={{ r: 2 }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>Chi tiết nhân viên</CardTitle>
+              <CardDescription>
+                Bảng lương và hiệu suất chi tiết
+              </CardDescription>
+            </div>
+            <div className="relative w-64">
+              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Tìm tên nhân viên..."
+                className="pl-8"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
           </div>
-        )}
+        </CardHeader>
+        <CardContent>
+          <ScrollArea className="h-[500px]">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Tên nhân viên</TableHead>
+                  <TableHead>Chi nhánh / Vai trò</TableHead>
+                  <TableHead
+                    className="text-right cursor-pointer hover:bg-muted/50"
+                    onClick={() => handleSort("shiftsCount")}
+                  >
+                    <div className="flex items-center justify-end">
+                      Ca làm <ArrowUpDown className="ml-2 h-3 w-3" />
+                    </div>
+                  </TableHead>
+                  <TableHead
+                    className="text-right cursor-pointer hover:bg-muted/50"
+                    onClick={() => handleSort("hours")}
+                  >
+                    <div className="flex items-center justify-end">
+                      Giờ làm <ArrowUpDown className="ml-2 h-3 w-3" />
+                    </div>
+                  </TableHead>
+                  <TableHead className="text-right text-red-500">
+                    Vắng/Nghỉ
+                  </TableHead>
+                  <TableHead
+                    className="text-right cursor-pointer hover:bg-muted/50"
+                    onClick={() => handleSort("gross_pay")}
+                  >
+                    <div className="flex items-center justify-end">
+                      Lương Gross <ArrowUpDown className="ml-2 h-3 w-3" />
+                    </div>
+                  </TableHead>
+                  <TableHead
+                    className="text-right cursor-pointer hover:bg-muted/50"
+                    onClick={() => handleSort("commission")}
+                  >
+                    <div className="flex items-center justify-end">
+                      Hoa hồng <ArrowUpDown className="ml-2 h-3 w-3" />
+                    </div>
+                  </TableHead>
+                  <TableHead
+                    className="text-right cursor-pointer hover:bg-muted/50"
+                    onClick={() => handleSort("net_pay")}
+                  >
+                    <div className="flex items-center justify-end">
+                      Thực nhận <ArrowUpDown className="ml-2 h-3 w-3" />
+                    </div>
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {tableData.map((row) => (
+                  <TableRow key={row.id}>
+                    <TableCell>
+                      <div className="font-medium">{row.full_name}</div>
+                      <Badge
+                        variant={
+                          row.status === "Active" ? "default" : "secondary"
+                        }
+                        className="mt-1 text-[10px]"
+                      >
+                        {row.status === "Active" ? "Working" : row.status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-sm">
+                      {row.branch_name} <br />
+                      <span className="text-muted-foreground text-xs">
+                        {row.role_name}
+                      </span>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {row.shiftsCount}
+                    </TableCell>
+                    <TableCell className="text-right font-medium">
+                      {Math.round(row.hours)}
+                    </TableCell>
+                    <TableCell className="text-right text-muted-foreground">
+                      {row.absences} / {row.leaves}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {formatVND(row.gross_pay)}
+                    </TableCell>
+                    <TableCell className="text-right text-blue-600">
+                      {row.commission > 0 ? formatVND(row.commission) : "-"}
+                    </TableCell>
+                    <TableCell className="text-right font-bold text-green-600">
+                      {formatVND(row.net_pay)}
+                    </TableCell>
+                  </TableRow>
+                ))}
+                {tableData.length === 0 && (
+                  <TableRow>
+                    <TableCell
+                      colSpan={8}
+                      className="text-center py-8 text-muted-foreground"
+                    >
+                      Không tìm thấy dữ liệu phù hợp
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </ScrollArea>
+        </CardContent>
       </Card>
     </div>
-  );
-}
-
-export default function EmployeeReportPageWithRoleGuard() {
-  return (
-    <RequireRole
-      roles={["manager", "admin"]}
-      fallback={
-        <div className="container mx-auto py-12 max-w-3xl">
-          <Card className="p-6 rounded-2xl">
-            <h2 className="text-xl font-semibold mb-2">Truy cập bị hạn chế</h2>
-            <p className="text-muted-foreground">
-              Bạn không có quyền xem báo cáo nhân viên.
-            </p>
-          </Card>
-        </div>
-      }
-    >
-      <EmployeeReportPage />
-    </RequireRole>
   );
 }
