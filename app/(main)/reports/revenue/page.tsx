@@ -1,7 +1,47 @@
 "use client";
 
 import * as React from "react";
-import { Card } from "@/components/ui/card";
+import {
+  format,
+  subDays,
+  startOfMonth,
+  endOfMonth,
+  startOfQuarter,
+  endOfQuarter,
+  startOfYear,
+  endOfYear,
+} from "date-fns";
+import {
+  Calendar as CalendarIcon,
+  RefreshCcw,
+  Download,
+  Check,
+  ChevronsUpDown,
+} from "lucide-react";
+import { DateRange } from "react-day-picker";
+
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
@@ -12,330 +52,675 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  getMonthlyRevenue,
-  getRevenueByCourt,
-  getRevenueByService,
-  getInvoicesByPeriod,
-  getPaidInvoices,
-  RevenueFilterOptions,
-} from "@/lib/mock/reportRevenue";
-import {
-  BarChart as RBarChart,
+  BarChart,
   Bar,
-  CartesianGrid,
   XAxis,
   YAxis,
+  CartesianGrid,
   Tooltip,
   ResponsiveContainer,
+  LineChart,
+  Line,
+  PieChart,
+  Pie,
+  Cell,
+  Legend,
 } from "recharts";
 
-const formatVND = (n: number) =>
-  new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(
-    n
-  );
+import {
+  getRevenueByBranchStacked,
+  getRevenueByCourtTypeTable,
+  getRevenueByServiceTable,
+} from "@/lib/mock/reportRevenue";
 
-const isMonthInQuarter = (month: number, quarter: number) => {
-  const start = (quarter - 1) * 3 + 1;
-  const end = start + 2;
-  return month >= start && month <= end;
-};
+import { branches } from "@/lib/mock";
+import {
+  getRevenueKPIs,
+  getRevenueOverTime,
+  getRevenueByCourtType,
+  getServiceRevenueShare,
+  getRevenueByBranchTable,
+  getCancellationStats,
+  RevenueReportFilter,
+} from "@/lib/mock/reportRevenue";
+
+// --- Components ---
+
+function DateRangePicker({
+  date,
+  setDate,
+}: {
+  date: DateRange | undefined;
+  setDate: (date: DateRange | undefined) => void;
+}) {
+  return (
+    <div className="grid gap-2">
+      <Popover>
+        <PopoverTrigger asChild>
+          <Button
+            id="date"
+            variant={"outline"}
+            className={cn(
+              "w-full justify-start text-left font-normal",
+              !date && "text-muted-foreground"
+            )}
+          >
+            <CalendarIcon className="mr-2 h-4 w-4" />
+            {date?.from ? (
+              date.to ? (
+                <>
+                  {format(date.from, "dd/MM/yyyy")} -{" "}
+                  {format(date.to, "dd/MM/yyyy")}
+                </>
+              ) : (
+                format(date.from, "dd/MM/yyyy")
+              )
+            ) : (
+              <span>Chọn khoảng thời gian</span>
+            )}
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-auto p-0" align="start">
+          <Calendar
+            initialFocus
+            mode="range"
+            defaultMonth={date?.from}
+            selected={date}
+            onSelect={setDate}
+            numberOfMonths={2}
+          />
+        </PopoverContent>
+      </Popover>
+    </div>
+  );
+}
+
+const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042"];
 
 export default function RevenueReportPage() {
-  const now = new Date();
-  const [year, setYear] = React.useState(now.getFullYear());
-  const [quarter, setQuarter] = React.useState<number | null>(null);
-  const [month, setMonth] = React.useState<number | null>(null);
+  // -- State --
+  const [dateRange, setDateRange] = React.useState<DateRange | undefined>({
+    from: subDays(new Date(), 30),
+    to: new Date(),
+  });
+  const [branchId, setBranchId] = React.useState<string>("0");
+  const [revenueSource, setRevenueSource] = React.useState<
+    "All" | "Court" | "Service"
+  >("All");
+  const [paymentMethod, setPaymentMethod] = React.useState<string>("All");
+  const [status, setStatus] = React.useState<string>("All"); // Actually only Paid makes sense for Revenue, but filter allows others to see Potential revenue
 
-  const filters = React.useMemo<RevenueFilterOptions>(
+  // -- Helpers --
+  const applyPreset = (type: "today" | "month" | "quarter" | "year") => {
+    const now = new Date();
+    switch (type) {
+      case "today":
+        setDateRange({ from: now, to: now });
+        break;
+      case "month":
+        setDateRange({ from: startOfMonth(now), to: endOfMonth(now) });
+        break;
+      case "quarter":
+        setDateRange({ from: startOfQuarter(now), to: endOfQuarter(now) });
+        break;
+      case "year":
+        setDateRange({ from: startOfYear(now), to: endOfYear(now) });
+        break;
+    }
+  };
+
+  const handleReset = () => {
+    setDateRange({ from: subDays(new Date(), 30), to: new Date() });
+    setBranchId("0");
+    setRevenueSource("All");
+    setPaymentMethod("All");
+    setStatus("All");
+  };
+
+  const formatVND = (n: number) =>
+    new Intl.NumberFormat("vi-VN", {
+      style: "currency",
+      currency: "VND",
+    }).format(n);
+
+  // -- Data Fetching --
+  const filter: RevenueReportFilter = React.useMemo(
     () => ({
-      month,
-      quarter,
+      branchId: branchId === "0" ? null : parseInt(branchId),
+      dateRange:
+        dateRange?.from && dateRange?.to
+          ? { from: dateRange.from, to: dateRange.to }
+          : undefined,
+      revenueSource,
+      paymentMethod,
+      status: status as any,
     }),
-    [month, quarter]
+    [branchId, dateRange, revenueSource, paymentMethod, status]
   );
 
-  const handleQuarterChange = React.useCallback(
-    (value: string) => {
-      const nextQuarter = value === "0" ? null : parseInt(value, 10);
-      setQuarter(nextQuarter);
-      if (nextQuarter && month && !isMonthInQuarter(month, nextQuarter)) {
-        setMonth(null);
-      }
-    },
-    [month]
+  const kpis = React.useMemo(() => getRevenueKPIs(filter), [filter]);
+  const revenueOverTime = React.useMemo(
+    () => getRevenueOverTime(filter),
+    [filter]
+  );
+  const revenueByCourtType = React.useMemo(
+    () => getRevenueByCourtType(filter),
+    [filter]
+  );
+  const serviceShare = React.useMemo(
+    () => getServiceRevenueShare(filter),
+    [filter]
+  );
+  const branchTableData = React.useMemo(
+    () => getRevenueByBranchTable(filter),
+    [filter]
+  );
+  const courtTypeTableData = React.useMemo(
+    () => getRevenueByCourtTypeTable(filter),
+    [filter]
+  );
+  const serviceTableData = React.useMemo(
+    () => getRevenueByServiceTable(filter),
+    [filter]
+  );
+  const branchStackedData = React.useMemo(
+    () => getRevenueByBranchStacked(filter),
+    [filter]
+  );
+  const cancelStats = React.useMemo(
+    () => getCancellationStats(filter),
+    [filter]
   );
 
-  const handleMonthChange = React.useCallback((value: string) => {
-    const nextMonth = value === "0" ? null : parseInt(value, 10);
-    setMonth(nextMonth);
-    if (nextMonth) {
-      setQuarter(Math.ceil(nextMonth / 3));
-    }
-  }, []);
-
-  // Data
-  const monthly = React.useMemo(
-    () => getMonthlyRevenue(year, filters),
-    [year, filters]
-  );
-  const byService = React.useMemo(
-    () => getRevenueByService(year, filters),
-    [year, filters]
-  );
-  const byCourt = React.useMemo(
-    () => getRevenueByCourt(year, filters),
-    [year, filters]
-  );
-
-  // KPIs
-  const paidInvoices = React.useMemo(
-    () => getPaidInvoices(year, filters),
-    [year, filters]
-  );
-  const invoicesInPeriod = React.useMemo(
-    () => getInvoicesByPeriod(year, filters),
-    [year, filters]
-  );
-  const revenueTotal = monthly.reduce((s, p) => s + p.y, 0);
-  const currentMonth = now.getMonth() + 1;
-  const quarterRevenue = React.useMemo(() => {
-    if (!quarter) return 0;
-    return monthly
-      .filter((p) => isMonthInQuarter(p.x, quarter))
-      .reduce((sum, point) => sum + point.y, 0);
-  }, [monthly, quarter]);
-  const highlightMonth = React.useMemo(() => {
-    if (month) return month;
-    if (quarter) {
-      const start = (quarter - 1) * 3 + 1;
-      const end = start + 2;
-      if (currentMonth >= start && currentMonth <= end) {
-        return currentMonth;
-      }
-      return start;
-    }
-    return currentMonth;
-  }, [currentMonth, month, quarter]);
-  const revenueMonth = highlightMonth
-    ? monthly.find((p) => p.x === highlightMonth)?.y || 0
-    : 0;
-  const totalInvoicesInPeriod = invoicesInPeriod.length;
-  const successRate =
-    totalInvoicesInPeriod > 0
-      ? Math.round((paidInvoices.length / totalInvoicesInPeriod) * 100)
-      : 0;
-
-  const chartData = React.useMemo(() => {
-    if (month) {
-      return monthly.filter((p) => p.x === month);
-    }
-    if (quarter) {
-      return monthly.filter((p) => isMonthInQuarter(p.x, quarter));
-    }
-    return monthly;
-  }, [month, monthly, quarter]);
-
-  const periodRevenueLabel = month
-    ? `Doanh thu tháng ${month}`
-    : quarter
-    ? `Doanh thu quý ${quarter}`
-    : "Doanh thu tháng hiện tại";
-  const periodRevenueValue = month
-    ? revenueMonth
-    : quarter
-    ? quarterRevenue
-    : revenueMonth;
+  const [tableGroupMode, setTableGroupMode] = React.useState<
+    "branch" | "courtType" | "service"
+  >("branch");
 
   return (
     <div className="container mx-auto py-6 space-y-8 max-w-screen-2xl">
-      <div className="space-y-2">
-        <h1 className="text-3xl font-bold tracking-tight">Báo cáo doanh thu</h1>
-        <p className="text-muted-foreground">
-          Tổng quan doanh thu theo năm, quý và tháng
-        </p>
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">
+            Báo cáo doanh thu
+          </h1>
+          <p className="text-muted-foreground">
+            Theo dõi dòng tiền, nguồn thu và hiệu quả kinh doanh
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => applyPreset("today")}
+          >
+            Hôm nay
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => applyPreset("month")}
+          >
+            Tháng này
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => applyPreset("quarter")}
+          >
+            Quý này
+          </Button>
+          <Button variant="outline" size="sm">
+            <Download className="mr-2 h-4 w-4" /> Xuất Excel
+          </Button>
+        </div>
       </div>
+
       <Separator />
 
-      {/* Filters */}
-      <Card className="p-4 rounded-2xl">
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <Select
-            value={year.toString()}
-            onValueChange={(v) => setYear(parseInt(v))}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Năm" />
-            </SelectTrigger>
-            <SelectContent>
-              {Array.from(
-                { length: 6 },
-                (_, i) => new Date().getFullYear() - i
-              ).map((y) => (
-                <SelectItem key={y} value={y.toString()}>
-                  {y}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+      {/* Filter Bar */}
+      <Card className="p-4 rounded-xl bg-muted/40 border-none shadow-none">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+          <div className="space-y-1 lg:col-span-2">
+            <label className="text-xs font-medium text-muted-foreground">
+              Thời gian
+            </label>
+            <DateRangePicker date={dateRange} setDate={setDateRange} />
+          </div>
 
-          <Select
-            value={(quarter || 0).toString()}
-            onValueChange={handleQuarterChange}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Quý" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="0">Tất cả quý</SelectItem>
-              {[1, 2, 3, 4].map((q) => (
-                <SelectItem key={q} value={q.toString()}>
-                  Quý {q}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <div className="space-y-1">
+            <label className="text-xs font-medium text-muted-foreground">
+              Chi nhánh
+            </label>
+            <Select value={branchId} onValueChange={setBranchId}>
+              <SelectTrigger>
+                <SelectValue placeholder="Tất cả chi nhánh" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="0">Tất cả chi nhánh</SelectItem>
+                {branches.map((b) => (
+                  <SelectItem key={b.id} value={b.id.toString()}>
+                    {b.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
 
-          <Select
-            value={(month || 0).toString()}
-            onValueChange={handleMonthChange}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Tháng" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="0">Tất cả tháng</SelectItem>
-              {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
-                <SelectItem
-                  key={m}
-                  value={m.toString()}
-                  disabled={quarter ? !isMonthInQuarter(m, quarter) : false}
-                >
-                  Tháng {m}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <div className="space-y-1">
+            <label className="text-xs font-medium text-muted-foreground">
+              Nguồn thu
+            </label>
+            <Select
+              value={revenueSource}
+              onValueChange={(v: any) => setRevenueSource(v)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Tất cả" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="All">Tất cả</SelectItem>
+                <SelectItem value="Court">Tiền sân</SelectItem>
+                <SelectItem value="Service">Dịch vụ</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-1">
+            <label className="text-xs font-medium text-muted-foreground">
+              Hình thức TT
+            </label>
+            <Select value={paymentMethod} onValueChange={setPaymentMethod}>
+              <SelectTrigger>
+                <SelectValue placeholder="Tất cả" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="All">Tất cả</SelectItem>
+                <SelectItem value="Cash">Tiền mặt</SelectItem>
+                <SelectItem value="Transfer">Chuyển khoản</SelectItem>
+                <SelectItem value="Card">Thẻ</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        <div className="flex justify-end mt-4 pt-4 border-t gap-2">
+          <Button variant="ghost" onClick={handleReset} size="sm">
+            <RefreshCcw className="mr-2 h-4 w-4" />
+            Đặt lại
+          </Button>
+          <Button size="sm">Áp dụng</Button>
         </div>
       </Card>
 
       {/* KPIs */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="p-4 rounded-2xl">
-          <div className="text-sm text-muted-foreground">
-            Tổng doanh thu theo bộ lọc
-          </div>
-          <div className="text-2xl font-bold">{formatVND(revenueTotal)}</div>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">
+              Tổng doanh thu
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-green-600">
+              {formatVND(kpis.totalRevenue)}
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              Sau giảm giá: {formatVND(kpis.totalDiscount)}
+            </p>
+          </CardContent>
         </Card>
-        <Card className="p-4 rounded-2xl">
-          <div className="text-sm text-muted-foreground">
-            {periodRevenueLabel}
-          </div>
-          <div className="text-2xl font-bold">
-            {formatVND(periodRevenueValue)}
-          </div>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">
+              Doanh thu Sân / Dịch vụ
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-lg font-bold">
+              {formatVND(kpis.courtRevenue)}
+            </div>
+            <div className="text-sm text-muted-foreground">
+              + {formatVND(kpis.serviceRevenue)} dịch vụ
+            </div>
+          </CardContent>
         </Card>
-        <Card className="p-4 rounded-2xl">
-          <div className="text-sm text-muted-foreground">
-            Số hóa đơn đã thanh toán
-          </div>
-          <div className="text-2xl font-bold">{paidInvoices.length}</div>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">
+              Hóa đơn thanh toán
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {Math.round(kpis.paidPercentage)}%
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              {kpis.totalInvoices} hóa đơn phát sinh
+            </p>
+          </CardContent>
         </Card>
-        <Card className="p-4 rounded-2xl">
-          <div className="text-sm text-muted-foreground">
-            Tỷ lệ thanh toán thành công
-          </div>
-          <div className="text-2xl font-bold">{successRate}%</div>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">
+              Hoàn tiền (Refund)
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-red-500">
+              {formatVND(kpis.totalRefund)}
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              Do hủy sân / sự cố
+            </p>
+          </CardContent>
         </Card>
       </div>
 
-      {/* Chart */}
-      <Card className="p-4 rounded-2xl">
-        <div className="text-lg font-semibold mb-2">Doanh thu theo tháng</div>
-        <div className="h-72">
-          <ResponsiveContainer width="100%" height="100%">
-            <RBarChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="x" tickFormatter={(v) => `Th ${v}`} />
-              <YAxis tickFormatter={(v) => `${Math.round(v / 1000)}k`} />
-              <Tooltip
-                formatter={(value: number) => formatVND(value)}
-                labelFormatter={(label) => `Tháng ${label}`}
-              />
-              <Bar
-                dataKey="y"
-                name="Doanh thu"
-                fill="#10b981"
-                radius={[4, 4, 0, 0]}
-              />
-            </RBarChart>
-          </ResponsiveContainer>
-        </div>
+      {/* Charts Row 1 */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <Card className="lg:col-span-2">
+          <CardHeader>
+            <CardTitle>Biểu đồ doanh thu</CardTitle>
+            <CardDescription>Theo thời gian đã chọn</CardDescription>
+          </CardHeader>
+          <CardContent className="h-[350px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={revenueOverTime}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                <XAxis dataKey="name" tick={{ fontSize: 12 }} />
+                <YAxis tickFormatter={(v) => `${v / 1000}k`} />
+                <Tooltip formatter={(v: number) => formatVND(v)} />
+                <Line
+                  type="monotone"
+                  dataKey="value"
+                  name="Doanh thu"
+                  stroke="#3b82f6"
+                  strokeWidth={3}
+                  dot={{ r: 3 }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Tỷ trọng dịch vụ</CardTitle>
+            <CardDescription>Theo nhóm dịch vụ</CardDescription>
+          </CardHeader>
+          <CardContent className="h-[350px] flex items-center justify-center">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={serviceShare}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={60}
+                  outerRadius={90}
+                  paddingAngle={5}
+                  dataKey="value"
+                >
+                  {serviceShare.map((entry, index) => (
+                    <Cell
+                      key={`cell-${index}`}
+                      fill={COLORS[index % COLORS.length]}
+                    />
+                  ))}
+                </Pie>
+                <Tooltip formatter={(v: number) => formatVND(v)} />
+                <Legend verticalAlign="bottom" />
+              </PieChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Charts Row 2 */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>Doanh thu theo chi nhánh (Stacked)</CardTitle>
+            <CardDescription>Phân tích Tiền sân vs Dịch vụ</CardDescription>
+          </CardHeader>
+          <CardContent className="h-[300px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={branchStackedData}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                <XAxis
+                  dataKey="name"
+                  tick={{ fontSize: 12 }}
+                  angle={-45}
+                  textAnchor="end"
+                  height={80}
+                />
+                <YAxis tickFormatter={(v) => `${v / 1000}k`} />
+                <Tooltip formatter={(v: number) => formatVND(v)} />
+                <Legend />
+                <Bar
+                  dataKey="courtRevenue"
+                  name="Tiền sân"
+                  stackId="a"
+                  fill="#3b82f6"
+                />
+                <Bar
+                  dataKey="serviceRevenue"
+                  name="Dịch vụ"
+                  stackId="a"
+                  fill="#10b981"
+                />
+              </BarChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Doanh thu theo loại sân</CardTitle>
+          </CardHeader>
+          <CardContent className="h-[300px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart
+                layout="vertical"
+                data={revenueByCourtType}
+                margin={{ left: 40 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" horizontal={false} />
+                <XAxis type="number" hide />
+                <YAxis
+                  dataKey="name"
+                  type="category"
+                  width={120}
+                  tick={{ fontSize: 12 }}
+                />
+                <Tooltip formatter={(v: number) => formatVND(v)} />
+                <Bar
+                  dataKey="value"
+                  fill="#8b5cf6"
+                  radius={[0, 4, 4, 0]}
+                  name="Doanh thu"
+                />
+              </BarChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Thống kê Hủy & No-show</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 gap-4 mb-6">
+              <div className="p-4 bg-red-50 rounded-lg border border-red-100">
+                <p className="text-sm text-red-600 font-medium">
+                  Tổng lượt hủy
+                </p>
+                <p className="text-3xl font-bold text-red-700">
+                  {cancelStats.cancelledCount}
+                </p>
+                <p className="text-xs text-red-500 mt-1">
+                  Trong đó {cancelStats.noShowCount} no-show
+                </p>
+              </div>
+              <div className="p-4 bg-orange-50 rounded-lg border border-orange-100">
+                <p className="text-sm text-orange-600 font-medium">
+                  Ước tính thất thoát
+                </p>
+                <p className="text-3xl font-bold text-orange-700">
+                  {formatVND(cancelStats.lostRevenue)}
+                </p>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <div className="flex justify-between text-sm">
+                <span>Tiền đã hoàn lại khách:</span>
+                <span className="font-medium">
+                  {formatVND(cancelStats.refundAmount)}
+                </span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span>Tỷ lệ hủy trên tổng đơn:</span>
+                <span className="font-medium">
+                  {Math.round(
+                    (cancelStats.cancelledCount / kpis.totalInvoices) * 100
+                  )}
+                  %
+                </span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Data Table */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Phân tích chi tiết</CardTitle>
+          <CardDescription>
+            Xem dữ liệu theo nhiều góc độ khác nhau
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Tabs
+            value={tableGroupMode}
+            onValueChange={(v: any) => setTableGroupMode(v)}
+            className="w-full"
+          >
+            <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value="branch">Theo Chi nhánh</TabsTrigger>
+              <TabsTrigger value="courtType">Theo Loại sân</TabsTrigger>
+              <TabsTrigger value="service">Theo Dịch vụ</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="branch" className="mt-4">
+              <ScrollArea className="h-[400px]">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Chi nhánh</TableHead>
+                      <TableHead className="text-right">
+                        Tổng doanh thu
+                      </TableHead>
+                      <TableHead className="text-right">Tiền sân</TableHead>
+                      <TableHead className="text-right">Dịch vụ</TableHead>
+                      <TableHead className="text-right">Số hóa đơn</TableHead>
+                      <TableHead className="text-right">Hoàn tiền</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {branchTableData.map((row) => (
+                      <TableRow key={row.id}>
+                        <TableCell className="font-medium">
+                          {row.name}
+                        </TableCell>
+                        <TableCell className="text-right font-bold text-green-600">
+                          {formatVND(row.revenue)}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {formatVND(row.courtRev)}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {formatVND(row.serviceRev)}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {row.invoiceCount}
+                        </TableCell>
+                        <TableCell className="text-right text-red-500">
+                          {formatVND(row.refundAmount)}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </ScrollArea>
+            </TabsContent>
+
+            <TabsContent value="courtType" className="mt-4">
+              <ScrollArea className="h-[400px]">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Loại sân</TableHead>
+                      <TableHead className="text-right">Doanh thu</TableHead>
+                      <TableHead className="text-right">
+                        Số lượt booking
+                      </TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {courtTypeTableData.map((row) => (
+                      <TableRow key={row.id}>
+                        <TableCell className="font-medium">
+                          {row.name}
+                        </TableCell>
+                        <TableCell className="text-right font-bold text-green-600">
+                          {formatVND(row.revenue)}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {row.bookingCount}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </ScrollArea>
+            </TabsContent>
+
+            <TabsContent value="service" className="mt-4">
+              <ScrollArea className="h-[400px]">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Dịch vụ</TableHead>
+                      <TableHead className="text-right">Doanh thu</TableHead>
+                      <TableHead className="text-right">Số lượt bán</TableHead>
+                      <TableHead>Chi nhánh top</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {serviceTableData.map((row) => (
+                      <TableRow key={row.id}>
+                        <TableCell className="font-medium">
+                          {row.name}
+                        </TableCell>
+                        <TableCell className="text-right font-bold text-green-600">
+                          {formatVND(row.revenue)}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {row.quantity}
+                        </TableCell>
+                        <TableCell>{row.topBranch || "-"}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </ScrollArea>
+            </TabsContent>
+          </Tabs>
+        </CardContent>
       </Card>
-
-      {/* Tables */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <Card className="p-4 rounded-2xl">
-          <div className="text-lg font-semibold mb-2">
-            Doanh thu theo dịch vụ
-          </div>
-          <ScrollArea className="max-h-[400px]">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Dịch vụ</TableHead>
-                  <TableHead className="text-right">Số lượng</TableHead>
-                  <TableHead className="text-right">Tổng tiền</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {byService.map((row) => (
-                  <TableRow key={row.service_id}>
-                    <TableCell>{row.service_name}</TableCell>
-                    <TableCell className="text-right">
-                      {row.total_quantity}
-                    </TableCell>
-                    <TableCell className="text-right font-medium">
-                      {formatVND(row.total_amount)}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </ScrollArea>
-        </Card>
-
-        <Card className="p-4 rounded-2xl">
-          <div className="text-lg font-semibold mb-2">Doanh thu theo sân</div>
-          <ScrollArea className="max-h-[400px]">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Sân</TableHead>
-                  <TableHead className="text-right">Tổng tiền</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {byCourt.map((row) => (
-                  <TableRow key={row.court_id}>
-                    <TableCell>{row.court_name}</TableCell>
-                    <TableCell className="text-right font-medium">
-                      {formatVND(row.total_amount)}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </ScrollArea>
-        </Card>
-      </div>
     </div>
   );
 }

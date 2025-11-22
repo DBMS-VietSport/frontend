@@ -2,290 +2,404 @@ import {
   courts,
   courtTypes,
   branches,
-  courtBookings,
-  bookingSlots,
-  invoices,
-  serviceBookings,
-  serviceBookingItems,
-  branchServices,
-  services,
+  BookingSlot,
+  CourtBooking,
+  Invoice,
 } from "@/lib/mock";
+import {
+  addDays,
+  format,
+  isWithinInterval,
+  startOfDay,
+  endOfDay,
+  subMonths,
+} from "date-fns";
 
-export interface CourtFilterOptions {
-  month?: number | null;
-  quarter?: number | null;
-  courtTypeId?: number | null;
-}
+// --- Extended Mock Data Generation ---
 
-export interface CourtUsageRow {
-  court_id: number;
-  court_name: string;
-  court_type_id: number;
-  court_type_name: string;
-  branch_id: number;
-  branch_name: string;
-  slot_count: number;
-  booked_minutes: number;
-  capacity_minutes: number;
-  occupancy: number; // 0..1
-}
+// We generate a larger dataset for reporting purposes because the base mock data is too small.
+let cachedMockData: {
+  bookings: CourtBooking[];
+  slots: BookingSlot[];
+  invoices: Invoice[];
+} | null = null;
 
-export interface BookingTypeStats {
-  online: number;
-  direct: number;
-}
+function generateMockReportData() {
+  if (cachedMockData) return cachedMockData;
 
-export interface CancellationStats {
-  cancelledCount: number;
-  noShowCount: number;
-  lostRevenue: number;
-}
+  const bookings: CourtBooking[] = [];
+  const slots: BookingSlot[] = [];
+  const invoices: Invoice[] = [];
 
-export interface MostUsedService {
-  service_id: number;
-  service_name: string;
-  usage_count: number;
-}
+  const now = new Date();
+  const startDate = subMonths(now, 12);
+  const endDate = now;
 
-function daysInMonth(year: number, month: number) {
-  return new Date(year, month, 0).getDate(); // month is 1..12 compatible
-}
+  let bookingIdCounter = 1000;
+  let slotIdCounter = 1000;
+  let invoiceIdCounter = 1000;
 
-function isSameMonth(dateIso: string, year: number, month: number) {
-  const d = new Date(dateIso);
-  return d.getFullYear() === year && d.getMonth() + 1 === month;
-}
+  // Generate ~500 bookings
+  for (let i = 0; i < 500; i++) {
+    const bookingDate = new Date(
+      startDate.getTime() +
+        Math.random() * (endDate.getTime() - startDate.getTime())
+    );
+    const court = courts[Math.floor(Math.random() * courts.length)];
+    const type = Math.random() > 0.4 ? "Online" : "Direct";
 
-function isMonthInQuarter(month: number, quarter: number) {
-  const start = (quarter - 1) * 3 + 1;
-  const end = start + 2;
-  return month >= start && month <= end;
-}
+    // Status distribution
+    const randStatus = Math.random();
+    let status = "Paid";
+    if (randStatus > 0.9) status = "Cancelled";
+    else if (randStatus > 0.85) status = "NoShow"; // Custom status for report
+    else if (randStatus > 0.8) status = "Held";
 
-function filterBookingsByPeriod(
-  year: number,
-  options?: CourtFilterOptions
-): typeof courtBookings {
-  const { month, quarter } = options || {};
-  return courtBookings.filter((b) => {
-    const created = new Date(b.created_at);
-    if (created.getFullYear() !== year) return false;
-    const m = created.getMonth() + 1;
-    if (month && m !== month) return false;
-    if (!month && quarter && !isMonthInQuarter(m, quarter)) return false;
-    return true;
-  });
-}
+    const bookingId = bookingIdCounter++;
 
-// Calculate capacity minutes for a period
-function getCapacityMinutes(
-  year: number,
-  options?: CourtFilterOptions
-): number {
-  const { month, quarter } = options || {};
-  if (month) {
-    const dayCount = daysInMonth(year, month);
-    return dayCount * 8 * 60; // 8h/day
-  }
-  if (quarter) {
-    const startMonth = (quarter - 1) * 3 + 1;
-    let totalDays = 0;
-    for (let m = startMonth; m < startMonth + 3; m++) {
-      totalDays += daysInMonth(year, m);
-    }
-    return totalDays * 8 * 60;
-  }
-  // Full year
-  let totalDays = 0;
-  for (let m = 1; m <= 12; m++) {
-    totalDays += daysInMonth(year, m);
-  }
-  return totalDays * 8 * 60;
-}
+    // For report purposes, we use the specific statuses including NoShow to enable filtering
+    // In a real app, this might be a separate field or specific status enum
+    const finalStatus = status === "Held" ? "Pending" : status;
 
-export function getCourtUsageByPeriod(
-  year: number,
-  options?: CourtFilterOptions
-): CourtUsageRow[] {
-  const capacityMinutes = getCapacityMinutes(year, options);
-  const bookingsInPeriod = filterBookingsByPeriod(year, options);
-  const { courtTypeId } = options || {};
-
-  const rows: CourtUsageRow[] = courts
-    .filter((c) => (courtTypeId ? c.court_type_id === courtTypeId : true))
-    .map((c) => {
-      const type = courtTypes.find((t) => t.id === c.court_type_id);
-      const branch = branches.find((b) => b.id === c.branch_id);
-      // bookings for this court
-      const bookingIds = bookingsInPeriod
-        .filter((b) => b.court_id === c.id && b.status !== "Cancelled")
-        .map((b) => b.id);
-      const slots = bookingSlots.filter(
-        (s) =>
-          bookingIds.includes(s.court_booking_id) && s.status !== "Cancelled"
-      );
-      let bookedMinutes = 0;
-      for (const s of slots) {
-        const start = new Date(s.start_time).getTime();
-        const end = new Date(s.end_time).getTime();
-        bookedMinutes += Math.max(0, Math.round((end - start) / 60000));
-      }
-      return {
-        court_id: c.id,
-        court_name: c.display_name,
-        court_type_id: c.court_type_id,
-        court_type_name: type?.name || "",
-        branch_id: c.branch_id,
-        branch_name: branch?.name || "",
-        slot_count: slots.length,
-        booked_minutes: bookedMinutes,
-        capacity_minutes: capacityMinutes,
-        occupancy: capacityMinutes > 0 ? bookedMinutes / capacityMinutes : 0,
-      };
+    bookings.push({
+      id: bookingId,
+      created_at: bookingDate.toISOString(),
+      type: type as "Online" | "Direct",
+      status: finalStatus,
+      customer_id: Math.floor(Math.random() * 10) + 1,
+      employee_id: type === "Direct" ? Math.floor(Math.random() * 5) + 1 : null,
+      court_id: court.id,
     });
 
-  return rows;
-}
+    // Create slot
+    const durationMinutes = [60, 90, 120][Math.floor(Math.random() * 3)];
+    const endTime = new Date(bookingDate.getTime() + durationMinutes * 60000);
 
-// Legacy function for backward compatibility
-export function getCourtUsageByMonth(
-  year: number,
-  month: number,
-  branchId?: number | null,
-  courtTypeId?: number | null
-): CourtUsageRow[] {
-  return getCourtUsageByPeriod(year, { month, courtTypeId });
-}
+    slots.push({
+      id: slotIdCounter++,
+      start_time: bookingDate.toISOString(),
+      end_time: endTime.toISOString(),
+      status:
+        finalStatus === "Cancelled" || finalStatus === "NoShow"
+          ? "Cancelled"
+          : "Confirmed",
+      court_booking_id: bookingId,
+    });
 
-export function getTopCourts(
-  year: number,
-  options?: CourtFilterOptions,
-  limit = 5
-) {
-  const rows = getCourtUsageByPeriod(year, options)
-    .sort((a, b) => b.slot_count - a.slot_count)
-    .slice(0, limit);
-  return rows;
-}
-
-export function getLowCourts(
-  year: number,
-  options?: CourtFilterOptions,
-  limit = 3
-) {
-  const rows = getCourtUsageByPeriod(year, options)
-    .sort((a, b) => a.slot_count - b.slot_count)
-    .slice(0, limit);
-  return rows;
-}
-
-export function getBookingTypeStats(
-  year: number,
-  options?: CourtFilterOptions
-): BookingTypeStats {
-  const bookings = filterBookingsByPeriod(year, options);
-  let online = 0;
-  let direct = 0;
-
-  for (const booking of bookings) {
-    if (booking.status === "Cancelled") continue;
-    if (booking.type === "Online") {
-      online++;
-    } else if (booking.type === "Direct") {
-      direct++;
+    // Create invoice if paid
+    if (status === "Paid") {
+      invoices.push({
+        id: invoiceIdCounter++,
+        total_amount: (court.base_hourly_price * durationMinutes) / 60,
+        payment_method: Math.random() > 0.5 ? "Cash" : "Transfer",
+        status: "Paid",
+        created_at: bookingDate.toISOString(),
+        court_booking_id: bookingId,
+        service_booking_id: null,
+      });
+    } else if (status === "NoShow" || status === "Cancelled") {
+      // Some cancelled bookings might have partial payment or refund info,
+      // but for simplicity we just track them as lost revenue opportunities if needed
     }
   }
 
-  return { online, direct };
+  cachedMockData = { bookings, slots, invoices };
+  return cachedMockData;
 }
 
-export function getCancellationStats(
-  year: number,
-  options?: CourtFilterOptions
-): CancellationStats {
-  const bookings = filterBookingsByPeriod(year, options);
-  let cancelledCount = 0;
-  let noShowCount = 0;
-  let lostRevenue = 0;
+// --- Filter Logic ---
 
-  for (const booking of bookings) {
-    if (booking.status === "Cancelled") {
-      cancelledCount++;
-      // Check if it's a no-show (cancelled after the booking time)
-      const bookingDate = new Date(booking.created_at);
-      const now = new Date();
-      // If cancelled after booking time, consider it no-show
-      // For simplicity, we'll check if there are slots that have passed
-      const bookingSlotsForBooking = bookingSlots.filter(
-        (s) => s.court_booking_id === booking.id
-      );
-      const hasPassedSlots = bookingSlotsForBooking.some(
-        (s) => new Date(s.start_time) < now
-      );
-      if (hasPassedSlots) {
-        noShowCount++;
-      }
+export interface CourtReportFilter {
+  dateRange: { from: Date; to: Date } | undefined;
+  branchIds: number[];
+  courtTypeId: number | null;
+  bookingMethod: "All" | "Online" | "Direct";
+  bookingStatus: "All" | "Paid" | "Held" | "Cancelled" | "NoShow";
+}
 
-      // Calculate lost revenue from invoices
-      const relatedInvoices = invoices.filter(
-        (inv) =>
-          inv.court_booking_id === booking.id ||
-          (inv.service_booking_id &&
-            serviceBookings.find(
-              (sb) =>
-                sb.id === inv.service_booking_id &&
-                sb.court_booking_id === booking.id
-            ))
-      );
-      // Only count unpaid invoices as lost revenue (paid ones might be refunded)
-      for (const inv of relatedInvoices) {
-        if (inv.status === "Unpaid" || inv.status === "Cancelled") {
-          lostRevenue += inv.total_amount;
-        }
+function filterData(filter: CourtReportFilter) {
+  const { bookings, slots, invoices } = generateMockReportData();
+
+  const filteredBookings = bookings.filter((b) => {
+    const bookingDate = new Date(b.created_at);
+
+    // Date Range
+    if (filter.dateRange?.from && filter.dateRange?.to) {
+      if (
+        !isWithinInterval(bookingDate, {
+          start: startOfDay(filter.dateRange.from),
+          end: endOfDay(filter.dateRange.to),
+        })
+      ) {
+        return false;
       }
     }
-  }
 
-  return { cancelledCount, noShowCount, lostRevenue };
+    // Branch
+    const court = courts.find((c) => c.id === b.court_id);
+    if (!court) return false;
+    if (
+      filter.branchIds.length > 0 &&
+      !filter.branchIds.includes(court.branch_id)
+    ) {
+      return false;
+    }
+
+    // Court Type
+    if (filter.courtTypeId && court.court_type_id !== filter.courtTypeId) {
+      return false;
+    }
+
+    // Booking Method
+    if (filter.bookingMethod !== "All" && b.type !== filter.bookingMethod) {
+      return false;
+    }
+
+    // Booking Status
+    const dbStatus = b.status;
+    if (filter.bookingStatus !== "All") {
+      if (filter.bookingStatus === "Paid" && dbStatus !== "Paid") return false;
+      if (filter.bookingStatus === "Held" && dbStatus !== "Pending")
+        return false;
+      if (filter.bookingStatus === "Cancelled" && dbStatus !== "Cancelled")
+        return false;
+      if (filter.bookingStatus === "NoShow" && dbStatus !== "NoShow")
+        return false;
+    }
+
+    return true;
+  });
+
+  const filteredBookingIds = new Set(filteredBookings.map((b) => b.id));
+
+  const filteredSlots = slots.filter((s) =>
+    filteredBookingIds.has(s.court_booking_id)
+  );
+  const filteredInvoices = invoices.filter(
+    (i) => i.court_booking_id && filteredBookingIds.has(i.court_booking_id)
+  );
+
+  return { filteredBookings, filteredSlots, filteredInvoices };
 }
 
-export function getMostUsedServices(
-  year: number,
-  options?: CourtFilterOptions,
-  limit = 5
-): MostUsedService[] {
-  const bookings = filterBookingsByPeriod(year, options);
-  const bookingIds = new Set(
-    bookings.filter((b) => b.status !== "Cancelled").map((b) => b.id)
+// --- KPI Calculations ---
+
+export function getReportKPIs(filter: CourtReportFilter) {
+  const { filteredBookings, filteredSlots, filteredInvoices } =
+    filterData(filter);
+
+  const totalBookings = filteredBookings.length;
+
+  const totalBookedMinutes = filteredSlots.reduce((acc, slot) => {
+    const start = new Date(slot.start_time).getTime();
+    const end = new Date(slot.end_time).getTime();
+    return acc + (end - start) / 60000;
+  }, 0);
+
+  const totalBookedHours = Math.round(totalBookedMinutes / 60);
+
+  // Occupancy: Total Booked Hours / Total Available Hours
+  // Total Available Hours = (Days in Range * Open Hours per Day * Number of Courts in Filter)
+  // Approximation: 12 hours open per day per court
+  const daysDiff =
+    filter.dateRange?.from && filter.dateRange?.to
+      ? (filter.dateRange.to.getTime() - filter.dateRange.from.getTime()) /
+        (1000 * 3600 * 24)
+      : 30; // default 30 days
+
+  const relevantCourtsCount = courts.filter(
+    (c) =>
+      (filter.branchIds.length === 0 ||
+        filter.branchIds.includes(c.branch_id)) &&
+      (!filter.courtTypeId || c.court_type_id === filter.courtTypeId)
+  ).length;
+
+  const totalCapacityHours =
+    Math.max(1, Math.ceil(daysDiff)) * 12 * relevantCourtsCount;
+  const occupancyRate =
+    totalCapacityHours > 0 ? totalBookedHours / totalCapacityHours : 0;
+
+  const totalRevenue = filteredInvoices.reduce(
+    (acc, inv) => acc + inv.total_amount,
+    0
   );
 
-  const serviceBookingIds = new Set(
-    serviceBookings
-      .filter((sb) => bookingIds.has(sb.court_booking_id))
-      .map((sb) => sb.id)
+  const onlineCount = filteredBookings.filter(
+    (b) => b.type === "Online"
+  ).length;
+  const directCount = filteredBookings.filter(
+    (b) => b.type === "Direct"
+  ).length;
+
+  const cancelledCount = filteredBookings.filter(
+    (b) => b.status === "Cancelled"
+  ).length;
+  const noShowCount = filteredBookings.filter(
+    (b) => b.status === "NoShow"
+  ).length;
+
+  // Estimated lost revenue: Average booking value * (cancelled + noshow)
+  const avgBookingValue =
+    totalBookings > 0 ? totalRevenue / totalBookings : 150000;
+  const lostRevenue = Math.round(
+    (cancelledCount + noShowCount) * avgBookingValue
   );
 
-  const serviceUsage = new Map<number, number>();
-
-  for (const item of serviceBookingItems) {
-    if (!serviceBookingIds.has(item.service_booking_id)) continue;
-    const branchService = branchServices.find(
-      (bs) => bs.id === item.branch_service_id
-    );
-    if (!branchService) continue;
-    const currentCount = serviceUsage.get(branchService.service_id) || 0;
-    serviceUsage.set(branchService.service_id, currentCount + item.quantity);
-  }
-
-  return Array.from(serviceUsage.entries())
-    .map(([service_id, usage_count]) => {
-      const service = services.find((s) => s.id === service_id);
       return {
-        service_id,
-        service_name: service?.name || `Dịch vụ #${service_id}`,
-        usage_count,
-      };
-    })
-    .sort((a, b) => b.usage_count - a.usage_count)
-    .slice(0, limit);
+    totalBookings,
+    totalBookedHours,
+    occupancyRate,
+    totalRevenue,
+    onlineCount,
+    directCount,
+    cancelledCount,
+    noShowCount,
+    lostRevenue,
+  };
+}
+
+// --- Chart Data ---
+
+export function getRevenueOverTime(filter: CourtReportFilter) {
+  const { filteredInvoices } = filterData(filter);
+  const dataMap = new Map<string, number>();
+
+  filteredInvoices.forEach((inv) => {
+    const date = format(new Date(inv.created_at), "yyyy-MM-dd");
+    dataMap.set(date, (dataMap.get(date) || 0) + inv.total_amount);
+  });
+
+  // Fill in gaps if needed, but for now just return sorted entries
+  return Array.from(dataMap.entries())
+    .map(([date, revenue]) => ({ date, revenue }))
+    .sort((a, b) => a.date.localeCompare(b.date));
+}
+
+export function getTopCourts(filter: CourtReportFilter) {
+  const { filteredBookings, filteredSlots } = filterData(filter);
+  const courtMap = new Map<
+    number,
+    { name: string; bookings: number; hours: number }
+  >();
+
+  filteredBookings.forEach((b) => {
+    const court = courts.find((c) => c.id === b.court_id);
+    if (!court) return;
+
+    if (!courtMap.has(b.court_id)) {
+      courtMap.set(b.court_id, {
+        name: court.display_name,
+        bookings: 0,
+        hours: 0,
+      });
+    }
+    const entry = courtMap.get(b.court_id)!;
+    entry.bookings += 1;
+  });
+
+  // Add hours
+  filteredSlots.forEach((s) => {
+    const b = filteredBookings.find((fb) => fb.id === s.court_booking_id);
+    if (b && courtMap.has(b.court_id)) {
+      const start = new Date(s.start_time).getTime();
+      const end = new Date(s.end_time).getTime();
+      const hours = (end - start) / (1000 * 3600);
+      courtMap.get(b.court_id)!.hours += hours;
+    }
+  });
+
+  return Array.from(courtMap.values())
+    .sort((a, b) => b.hours - a.hours)
+    .slice(0, 10);
+}
+
+export function getStatusDistribution(filter: CourtReportFilter) {
+  const { filteredBookings } = filterData(filter);
+  const counts = {
+    Paid: 0,
+    Held: 0,
+    Cancelled: 0,
+    NoShow: 0,
+  };
+
+  filteredBookings.forEach((b) => {
+    if (b.status === "Paid") counts.Paid++;
+    else if (b.status === "Pending") counts.Held++;
+    else if (b.status === "Cancelled") counts.Cancelled++;
+    else if (b.status === "NoShow") counts.NoShow++;
+  });
+
+  return [
+    { name: "Đã thanh toán", value: counts.Paid, fill: "#22c55e" }, // green
+    { name: "Giữ chỗ", value: counts.Held, fill: "#eab308" }, // yellow
+    { name: "Đã hủy", value: counts.Cancelled, fill: "#ef4444" }, // red
+    { name: "Vắng mặt", value: counts.NoShow, fill: "#f97316" }, // orange
+  ];
+}
+
+// --- Data Table ---
+
+export function getCourtDetailsTable(filter: CourtReportFilter) {
+  const { filteredBookings, filteredSlots, filteredInvoices } =
+    filterData(filter);
+
+  // We want a row per court that matches the Branch/Type filter
+  const relevantCourts = courts.filter(
+    (c) =>
+      (filter.branchIds.length === 0 ||
+        filter.branchIds.includes(c.branch_id)) &&
+      (!filter.courtTypeId || c.court_type_id === filter.courtTypeId)
+  );
+
+  return relevantCourts.map((court) => {
+    const courtBookings = filteredBookings.filter(
+      (b) => b.court_id === court.id
+    );
+    const bookingIds = new Set(courtBookings.map((b) => b.id));
+    const courtSlots = filteredSlots.filter((s) =>
+      bookingIds.has(s.court_booking_id)
+    );
+    const courtInvoices = filteredInvoices.filter(
+      (i) => i.court_booking_id && bookingIds.has(i.court_booking_id)
+    );
+
+    const bookingCount = courtBookings.length;
+    const totalHours = courtSlots.reduce((acc, s) => {
+      return (
+        acc +
+        (new Date(s.end_time).getTime() - new Date(s.start_time).getTime()) /
+          (1000 * 3600)
+      );
+    }, 0);
+
+    const revenue = courtInvoices.reduce((acc, i) => acc + i.total_amount, 0);
+    const cancelCount = courtBookings.filter(
+      (b) => b.status === "Cancelled" || b.status === "NoShow"
+    ).length;
+
+    const branch = branches.find((b) => b.id === court.branch_id);
+    const type = courtTypes.find((t) => t.id === court.court_type_id);
+
+    // Occupancy
+    const daysDiff =
+      filter.dateRange?.from && filter.dateRange?.to
+        ? (filter.dateRange.to.getTime() - filter.dateRange.from.getTime()) /
+          (1000 * 3600 * 24)
+        : 30;
+    const capacityHours = Math.max(1, Math.ceil(daysDiff)) * 12; // 12h/day assumption
+    const occupancy =
+      capacityHours > 0 ? (totalHours / capacityHours) * 100 : 0;
+
+      return {
+      id: court.id,
+      name: court.display_name,
+      branchName: branch?.name || "",
+      typeName: type?.name || "",
+      bookingCount,
+      totalHours: Math.round(totalHours * 10) / 10,
+      occupancy: Math.round(occupancy),
+      revenue,
+      cancelled: cancelCount,
+    };
+  });
 }
