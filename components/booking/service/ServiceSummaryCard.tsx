@@ -4,8 +4,7 @@ import * as React from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { format } from "date-fns";
-import { vi } from "date-fns/locale";
+import { formatDate } from "@/lib/utils/date";
 import { ArrowRight, Calendar, Clock, MapPin, DollarSign } from "lucide-react";
 import type { TimeSlot, Court, CourtType, ServiceItem, Coach } from "../types";
 
@@ -108,7 +107,7 @@ export function ServiceSummaryCard({
                   Ngày đặt
                 </p>
                 <p className="text-base font-semibold">
-                  {format(date, "dd/MM/yyyy", { locale: vi })}
+                  {formatDate(date)}
                 </p>
               </div>
             </div>

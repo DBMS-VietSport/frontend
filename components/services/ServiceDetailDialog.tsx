@@ -32,6 +32,7 @@ import type {
   UpdateBranchServicePayload,
 } from "@/lib/services/types";
 import { isLowStock, formatPrice } from "@/lib/services/selectors";
+import { logger } from "@/lib/utils/logger";
 
 interface ServiceDetailDialogProps {
   open: boolean;
@@ -118,7 +119,7 @@ export function ServiceDetailDialog({
       );
       setIsEditing(false);
     } catch (error) {
-      console.error("Failed to update service:", error);
+      logger.error("Failed to update service:", error);
     } finally {
       setIsSaving(false);
     }

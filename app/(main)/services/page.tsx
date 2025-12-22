@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { Separator } from "@/components/ui/separator";
+import { PageHeader } from "@/components/shared";
 import { ServiceFilterBar } from "@/components/services/ServiceFilterBar";
 import { ServiceTable } from "@/components/services/ServiceTable";
 import { ServiceFormDialog } from "@/components/services/ServiceFormDialog";
@@ -13,13 +14,19 @@ import type {
   UpdateServicePayload,
   UpdateBranchServicePayload,
 } from "@/lib/services/types";
-import { serviceRepo } from "@/lib/mock";
+import {
+  listServices,
+  createService,
+  updateService,
+  updateBranchService,
+} from "@/lib/services/mockRepo";
 import {
   searchServices,
   filterByRentalType,
   getLowStockServices,
 } from "@/lib/services/selectors";
 import { toast } from "sonner";
+import { logger } from "@/lib/utils/logger";
 
 export default function ServicesPage() {
   const [services, setServices] = React.useState<ServiceRow[]>([]);
@@ -38,7 +45,7 @@ export default function ServicesPage() {
 
   // Load services on mount
   React.useEffect(() => {
-    loadServices();
+    loadServicesData();
   }, []);
 
   // Apply filters
@@ -48,13 +55,13 @@ export default function ServicesPage() {
     setFilteredServices(filtered);
   }, [services, searchText, selectedType]);
 
-  const loadServices = async () => {
+  const loadServicesData = async () => {
     setIsLoading(true);
     try {
-      const data = await serviceRepo.listServices();
+      const data = await listServices();
       setServices(data);
     } catch (error) {
-      console.error("Failed to load services:", error);
+      logger.error("Failed to load services:", error);
       toast.error("Không thể tải danh sách dịch vụ");
     } finally {
       setIsLoading(false);
@@ -72,11 +79,11 @@ export default function ServicesPage() {
 
   const handleCreateService = async (payload: CreateServicePayload) => {
     try {
-      await serviceRepo.createService(payload);
+      await createService(payload);
       toast.success("Đã thêm dịch vụ mới thành công");
-      await loadServices();
+      await loadServicesData();
     } catch (error) {
-      console.error("Failed to create service:", error);
+      logger.error("Failed to create service:", error);
       toast.error("Không thể thêm dịch vụ");
     }
   };
@@ -88,15 +95,12 @@ export default function ServicesPage() {
     branchServicePayload: UpdateBranchServicePayload
   ) => {
     try {
-      await serviceRepo.updateService(serviceId, servicePayload);
-      await serviceRepo.updateBranchService(
-        branchServiceId,
-        branchServicePayload
-      );
+      await updateService(serviceId, servicePayload);
+      await updateBranchService(branchServiceId, branchServicePayload);
       toast.success("Cập nhật dịch vụ thành công");
-      await loadServices();
+      await loadServicesData();
     } catch (error) {
-      console.error("Failed to update service:", error);
+      logger.error("Failed to update service:", error);
       toast.error("Không thể cập nhật dịch vụ");
     }
   };
@@ -106,12 +110,10 @@ export default function ServicesPage() {
   return (
     <div className="container mx-auto py-6 space-y-8 max-w-screen-2xl">
       {/* Page Header */}
-      <div className="space-y-2">
-        <h1 className="text-3xl font-bold tracking-tight">Quản lý dịch vụ</h1>
-        <p className="text-muted-foreground">
-          Xem và quản lý thông tin các dịch vụ, giá cả và tồn kho
-        </p>
-      </div>
+      <PageHeader
+        title="Quản lý dịch vụ"
+        subtitle="Xem và quản lý thông tin các dịch vụ, giá cả và tồn kho"
+      />
 
       <Separator />
 

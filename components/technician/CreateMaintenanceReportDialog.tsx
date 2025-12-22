@@ -23,6 +23,7 @@ import {
 import { maintenanceRepo } from "@/lib/mock/maintenanceRepo";
 import { useAuth } from "@/lib/auth/useAuth";
 import { toast } from "sonner";
+import { logger } from "@/lib/utils/logger";
 
 interface Props {
   onCreated?: () => void;
@@ -91,7 +92,7 @@ export function CreateMaintenanceReportDialog({ onCreated }: Props) {
       setCost(0);
       setPostStatus("Available");
     } catch (err) {
-      console.error(err);
+      logger.error("Create maintenance report failed:", err);
       toast.error("Tạo báo cáo thất bại");
     } finally {
       setLoading(false);

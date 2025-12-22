@@ -24,6 +24,7 @@ import type {
   UpdateCourtPayload,
 } from "@/lib/courts/types";
 import { courtTypes, branches } from "@/lib/mock";
+import { logger } from "@/lib/utils/logger";
 
 interface CourtEditDialogProps {
   open: boolean;
@@ -75,7 +76,7 @@ export function CourtEditDialog({
       await onSave(court.id, formData);
       onOpenChange(false);
     } catch (error) {
-      console.error("Failed to update court:", error);
+      logger.error("Failed to update court:", error);
     } finally {
       setIsSaving(false);
     }

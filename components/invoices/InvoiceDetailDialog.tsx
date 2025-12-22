@@ -10,12 +10,12 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
+import { StatusBadge } from "@/components/shared";
 import type { InvoiceDetail } from "@/lib/mock/invoiceManagerRepo";
-import { format } from "date-fns";
-import { vi } from "date-fns/locale";
+import { formatDateTime } from "@/lib/utils/date";
 import { X, RefreshCw, ArrowLeftRight } from "lucide-react";
+import { formatVND } from "@/lib/booking/pricing";
 
 interface InvoiceDetailDialogProps {
   open: boolean;
@@ -38,31 +38,6 @@ export function InvoiceDetailDialog({
   onProcessRefund,
   onRefresh,
 }: InvoiceDetailDialogProps) {
-  const formatVND = (amount: number) => {
-    return new Intl.NumberFormat("vi-VN", {
-      style: "currency",
-      currency: "VND",
-    }).format(amount);
-  };
-
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case "Paid":
-        return <Badge className="bg-green-500">Đã thanh toán</Badge>;
-      case "Unpaid":
-      case "Pending":
-        return <Badge className="bg-amber-500">Chưa thanh toán</Badge>;
-      case "Cancelled":
-        return <Badge variant="destructive">Đã hủy</Badge>;
-      case "Refunded":
-        return <Badge className="bg-blue-500">Đã hoàn tiền</Badge>;
-      case "PartiallyRefunded":
-      case "Partially Refunded":
-        return <Badge className="bg-blue-500">Hoàn tiền một phần</Badge>;
-      default:
-        return <Badge>{status}</Badge>;
-    }
-  };
 
   const canCancel = invoice.status === "Paid";
   const canRefund = invoice.status === "Paid";
@@ -93,7 +68,7 @@ export function InvoiceDetailDialog({
             </div>
             <div>
               <p className="text-sm text-muted-foreground">Trạng thái</p>
-              <div className="mt-1">{getStatusBadge(invoice.status)}</div>
+              <div className="mt-1"><StatusBadge status={invoice.status} category="payment" /></div>
             </div>
             <div>
               <p className="text-sm text-muted-foreground">Khách hàng</p>
@@ -103,9 +78,7 @@ export function InvoiceDetailDialog({
               <p className="text-sm text-muted-foreground">Ngày tạo</p>
               <p className="font-medium">
                 {invoice.created_at
-                  ? format(new Date(invoice.created_at), "dd/MM/yyyy HH:mm", {
-                      locale: vi,
-                    })
+                  ? formatDateTime(invoice.created_at)
                   : "-"}
               </p>
             </div>

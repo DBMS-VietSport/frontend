@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
 import { CourtCard } from "./CourtCard";
+import { TableEmptyState } from "@/components/shared";
 import type { Court } from "@/lib/courts/types";
 import { groupCourtsByType } from "@/lib/courts/selectors";
 import { getCourtImageUrl } from "@/lib/courts/utils";
@@ -29,11 +30,7 @@ export function CourtAccordionList({
 
   if (nonEmptyGroups.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-12 text-center">
-        <p className="text-muted-foreground text-lg">
-          Không tìm thấy sân nào phù hợp với bộ lọc
-        </p>
-      </div>
+      <TableEmptyState entityName="sân phù hợp với bộ lọc" className="py-12" />
     );
   }
 

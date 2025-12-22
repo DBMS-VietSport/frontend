@@ -11,7 +11,7 @@ import {
   mockBranches,
 } from "@/lib/booking/mockRepo";
 import { listCustomers } from "@/lib/customers/mockRepo";
-import type { CourtBooking, BookingSlot, Invoice } from "@/lib/booking/types";
+import type { CourtBooking, BookingSlot, Invoice } from "@/lib/types";
 import type { Customer } from "@/lib/customers/types";
 import { MOCK_USERS } from "@/lib/mock/authMock";
 

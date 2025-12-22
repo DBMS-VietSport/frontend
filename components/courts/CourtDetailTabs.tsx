@@ -47,6 +47,7 @@ import {
 } from "@/lib/courts/utils";
 import { courtTypes, branches, employeeRepo } from "@/lib/mock";
 import { toast } from "sonner";
+import { logger } from "@/lib/utils/logger";
 
 interface CourtDetailTabsProps {
   court: Court;
@@ -107,7 +108,7 @@ export function CourtDetailTabs({
       await onSave(editData);
       onEditToggle();
     } catch (error) {
-      console.error("Failed to save:", error);
+      logger.error("Failed to save:", error);
     } finally {
       setIsSaving(false);
     }
@@ -127,7 +128,7 @@ export function CourtDetailTabs({
       });
       toast.success("Đã thêm báo cáo bảo trì thành công");
     } catch (error) {
-      console.error("Failed to add maintenance:", error);
+      logger.error("Failed to add maintenance:", error);
       toast.error("Không thể thêm báo cáo bảo trì");
     }
   };

@@ -14,6 +14,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import type { InvoiceDetail } from "@/lib/mock/invoiceManagerRepo";
+import { formatVND } from "@/lib/booking/pricing";
 
 interface RefundInvoiceDialogProps {
   open: boolean;
@@ -31,13 +32,6 @@ export function RefundInvoiceDialog({
   const [amount, setAmount] = React.useState(invoice.total_amount.toString());
   const [reason, setReason] = React.useState("");
   const [isSubmitting, setIsSubmitting] = React.useState(false);
-
-  const formatVND = (amount: number) => {
-    return new Intl.NumberFormat("vi-VN", {
-      style: "currency",
-      currency: "VND",
-    }).format(amount);
-  };
 
   const handleConfirm = async () => {
     const amountNum = parseFloat(amount);

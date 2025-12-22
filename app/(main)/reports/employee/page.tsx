@@ -53,6 +53,7 @@ import {
   getEmployeeDetailsTable,
   EmployeeReportFilter,
 } from "@/lib/mock/employeeReportRepo";
+import { formatVND } from "@/lib/booking/pricing";
 
 // --- Components ---
 
@@ -143,12 +144,6 @@ export default function EmployeeReportPage() {
       return { key, direction: "desc" }; // Default desc for numbers usually
     });
   };
-
-  const formatVND = (n: number) =>
-    new Intl.NumberFormat("vi-VN", {
-      style: "currency",
-      currency: "VND",
-    }).format(n);
 
   return (
     <div className="container mx-auto py-6 space-y-8 max-w-screen-2xl">

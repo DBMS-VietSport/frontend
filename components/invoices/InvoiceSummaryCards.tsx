@@ -3,18 +3,13 @@
 import * as React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import type { InvoiceSummary } from "@/lib/mock/invoiceManagerRepo";
+import { formatVND } from "@/lib/booking/pricing";
 
 interface InvoiceSummaryCardsProps {
   summary: InvoiceSummary;
 }
 
 export function InvoiceSummaryCards({ summary }: InvoiceSummaryCardsProps) {
-  const formatVND = (amount: number) => {
-    return new Intl.NumberFormat("vi-VN", {
-      style: "currency",
-      currency: "VND",
-    }).format(amount);
-  };
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-4 gap-4">

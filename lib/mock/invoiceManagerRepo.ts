@@ -13,7 +13,7 @@ import {
   mockEmployees,
 } from "@/lib/booking/mockRepo";
 import { MOCK_USERS } from "@/lib/mock/authMock";
-import type { Invoice, CourtBooking } from "@/lib/booking/types";
+import type { Invoice, CourtBooking } from "@/lib/types";
 
 // Extended invoice with additional fields for management
 export interface InvoiceDetail extends Invoice {

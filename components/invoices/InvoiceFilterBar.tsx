@@ -20,8 +20,7 @@ import {
 } from "@/components/ui/popover";
 import { CalendarIcon, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { format } from "date-fns";
-import { vi } from "date-fns/locale";
+import { formatDate } from "@/lib/utils/date";
 import type { InvoiceSearchFilters } from "@/lib/mock/invoiceManagerRepo";
 import type { MockUser } from "@/lib/mock/authMock";
 
@@ -67,7 +66,7 @@ export function InvoiceFilterBar({
                 >
                   <CalendarIcon className="mr-2 h-4 w-4" />
                   {dateFrom ? (
-                    format(dateFrom, "dd/MM/yyyy", { locale: vi })
+                    formatDate(dateFrom)
                   ) : (
                     <span>Chọn ngày</span>
                   )}
@@ -98,7 +97,7 @@ export function InvoiceFilterBar({
                 >
                   <CalendarIcon className="mr-2 h-4 w-4" />
                   {dateTo ? (
-                    format(dateTo, "dd/MM/yyyy", { locale: vi })
+                    formatDate(dateTo)
                   ) : (
                     <span>Chọn ngày</span>
                   )}

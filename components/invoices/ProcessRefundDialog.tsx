@@ -21,6 +21,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import type { InvoiceDetail } from "@/lib/mock/invoiceManagerRepo";
+import { formatVND } from "@/lib/booking/pricing";
 
 const REFUND_REASONS = [
   { value: "court_unavailable", label: "Hết sân / sân không thể phục vụ" },
@@ -47,13 +48,6 @@ export function ProcessRefundDialog({
   const [reasonType, setReasonType] = React.useState<string>("");
   const [customReason, setCustomReason] = React.useState("");
   const [isSubmitting, setIsSubmitting] = React.useState(false);
-
-  const formatVND = (amount: number) => {
-    return new Intl.NumberFormat("vi-VN", {
-      style: "currency",
-      currency: "VND",
-    }).format(amount);
-  };
 
   const handleConfirm = async () => {
     const amountNum = parseFloat(amount);

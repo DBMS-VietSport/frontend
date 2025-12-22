@@ -35,6 +35,7 @@ import { mockRoles } from "@/lib/employees/mockRepo";
 import { mockBranches as branches } from "@/lib/booking/mockRepo";
 import { EmployeePerformanceChart } from "./EmployeePerformanceChart";
 import type { PerformanceRecord } from "@/lib/employees/types";
+import { logger } from "@/lib/utils/logger";
 
 interface EmployeeDetailTabsProps {
   employee: Employee;
@@ -84,7 +85,7 @@ export function EmployeeDetailTabs({
       await onSave(editData);
       onEditToggle();
     } catch (error) {
-      console.error("Failed to save:", error);
+      logger.error("Failed to save:", error);
     } finally {
       setIsSaving(false);
     }

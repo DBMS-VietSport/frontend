@@ -14,6 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Eye, AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { LoadingSpinner, TableEmptyState } from "@/components/shared";
 import type { ServiceRow } from "@/lib/services/types";
 import {
   isLowStock,
@@ -50,7 +51,7 @@ export function ServiceTable({
     return (
       <Card className="p-6">
         <div className="flex items-center justify-center py-12">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+          <LoadingSpinner />
         </div>
       </Card>
     );
@@ -59,11 +60,7 @@ export function ServiceTable({
   if (services.length === 0) {
     return (
       <Card className="p-6">
-        <div className="flex flex-col items-center justify-center py-12 text-center">
-          <p className="text-muted-foreground text-lg">
-            Không tìm thấy dịch vụ nào
-          </p>
-        </div>
+        <TableEmptyState entityName="dịch vụ" className="py-12" />
       </Card>
     );
   }

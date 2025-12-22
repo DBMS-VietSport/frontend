@@ -22,6 +22,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import type { Employee, CreateEmployeePayload } from "@/lib/employees/types";
 import { mockRoles } from "@/lib/employees/mockRepo";
 import { mockBranches as branches } from "@/lib/booking/mockRepo";
+import { logger } from "@/lib/utils/logger";
 
 interface EmployeeFormDialogProps {
   open: boolean;
@@ -101,7 +102,7 @@ export function EmployeeFormDialog({
       await onSave(formData);
       onOpenChange(false);
     } catch (error) {
-      console.error("Failed to save employee:", error);
+      logger.error("Failed to save employee:", error);
     } finally {
       setIsSaving(false);
     }

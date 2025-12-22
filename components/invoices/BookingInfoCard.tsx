@@ -25,6 +25,8 @@ import type {
 } from "@/lib/mock/invoiceCashierRepo";
 import { listUnpaidBookings } from "@/lib/mock/invoiceCashierRepo";
 import { Search, List } from "lucide-react";
+import { formatVND } from "@/lib/booking/pricing";
+import { logger } from "@/lib/utils/logger";
 
 interface BookingInfoCardProps {
   bookingCode: string;
@@ -47,20 +49,13 @@ export function BookingInfoCard({
   >([]);
   const [loadingBookings, setLoadingBookings] = React.useState(false);
 
-  const formatVND = (amount: number) => {
-    return new Intl.NumberFormat("vi-VN", {
-      style: "currency",
-      currency: "VND",
-    }).format(amount);
-  };
-
   const loadUnpaidBookings = async () => {
     setLoadingBookings(true);
     try {
       const bookings = await listUnpaidBookings();
       setUnpaidBookings(bookings);
     } catch (error) {
-      console.error("Failed to load unpaid bookings:", error);
+      logger.error("Failed to load unpaid bookings:", error);
     } finally {
       setLoadingBookings(false);
     }

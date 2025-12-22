@@ -6,21 +6,19 @@ import { FilterBar } from "@/components/booking/manage/FilterBar";
 import { BookingTable } from "@/components/booking/manage/BookingTable";
 import { BookingDetailDialog } from "@/components/booking/manage/BookingDetailDialog";
 import type { FilterValues } from "@/components/booking/manage/FilterBar";
-import type { BookingRow, BookingDetailView } from "@/lib/booking/types";
+import type { BookingRow } from "@/lib/types";
 import {
-  listBookings,
-  getInvoicesFor,
-  getServicesFor,
-} from "@/lib/booking/mockRepo";
-import {
-  makeBookingRow,
-  makeBookingDetailView,
-  applyFilters,
-} from "@/lib/booking/selectors";
+  useBookingsQuery,
+  useBookingDetailQuery,
+} from "@/lib/api/booking";
+import { applyFilters } from "@/lib/booking/selectors";
 import { useAuth } from "@/lib/auth/useAuth";
+import { LoadingSpinner, PageHeader } from "@/components/shared";
 
 export default function BookingManagePage() {
   const { user } = useAuth();
+
+  // Filter state
   const [filters, setFilters] = React.useState<FilterValues>({
     date: new Date(),
     courtTypeId: null,
@@ -28,90 +26,74 @@ export default function BookingManagePage() {
     searchText: "",
   });
 
-  const [allRows, setAllRows] = React.useState<BookingRow[]>([]);
-  const [filteredRows, setFilteredRows] = React.useState<BookingRow[]>([]);
-  const [selectedBooking, setSelectedBooking] =
-    React.useState<BookingDetailView | null>(null);
+  // Dialog state
+  const [selectedBookingId, setSelectedBookingId] = React.useState<number | null>(null);
   const [dialogOpen, setDialogOpen] = React.useState(false);
-  const [isLoading, setIsLoading] = React.useState(true);
 
-  // Load bookings on mount
-  React.useEffect(() => {
-    loadBookings();
-  }, []);
+  // Fetch bookings using React Query
+  const {
+    data: bookings = [],
+    isLoading,
+    error,
+  } = useBookingsQuery();
 
-  const loadBookings = async () => {
-    setIsLoading(true);
-    try {
-      const bookings = await listBookings();
-
-      // Transform to rows with invoices
-      const rows = await Promise.all(
-        bookings.map(async (booking) => {
-          const invoices = await getInvoicesFor(booking.id);
-          return makeBookingRow(booking, invoices);
-        })
-      );
-
-      // If customer, restrict to own bookings (by full name)
-      const visibleRows =
-        user && user.role === "customer"
-          ? rows.filter((r) => r.customerName === user.fullName)
-          : rows;
-
-      setAllRows(visibleRows);
-    } catch (error) {
-      console.error("Failed to load bookings:", error);
-    } finally {
-      setIsLoading(false);
+  // Fetch selected booking detail using React Query
+  const { data: selectedBooking } = useBookingDetailQuery(
+    selectedBookingId ?? undefined,
+    {
+      enabled: !!selectedBookingId,
     }
+  );
+
+  // Filter bookings based on user role and filters
+  const filteredRows = React.useMemo(() => {
+    let rows = bookings;
+
+    // If customer, restrict to own bookings
+    if (user?.role === "customer") {
+      rows = rows.filter((r) => r.customerName === user.fullName);
+    }
+
+    // Apply UI filters
+    return applyFilters(rows, filters);
+  }, [bookings, filters, user]);
+
+  const handleRowClick = (row: BookingRow) => {
+    setSelectedBookingId(row.id);
+    setDialogOpen(true);
   };
 
-  // Apply filters when filters or data changes
-  React.useEffect(() => {
-    const filtered = applyFilters(allRows, filters);
-    setFilteredRows(filtered);
-  }, [allRows, filters]);
-
-  const handleRowClick = async (row: BookingRow) => {
-    try {
-      // Fetch full booking details
-      const bookings = await listBookings();
-      const booking = bookings.find((b) => b.id === row.id);
-      if (!booking) return;
-
-      const invoices = await getInvoicesFor(booking.id);
-      const { serviceBooking, items } = await getServicesFor(booking.id);
-
-      const detailView = makeBookingDetailView(
-        booking,
-        invoices,
-        items,
-        serviceBooking?.id
-      );
-
-      setSelectedBooking(detailView);
-      setDialogOpen(true);
-    } catch (error) {
-      console.error("Failed to load booking details:", error);
+  const handleDialogClose = (open: boolean) => {
+    setDialogOpen(open);
+    if (!open) {
+      setSelectedBookingId(null);
     }
   };
 
   const isCustomer = user?.role === "customer";
 
+  // Show error state
+  if (error) {
+    return (
+      <div className="container mx-auto py-6 max-w-screen-2xl">
+        <div className="text-center py-12 text-destructive">
+          Không thể tải danh sách booking. Vui lòng thử lại sau.
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="container mx-auto py-6 space-y-8 max-w-screen-2xl">
-      {/* Page Header */}
-      <div className="space-y-2">
-        <h1 className="text-3xl font-bold tracking-tight">
-          {isCustomer ? "Đặt sân của tôi" : "Quản lý đặt sân"}
-        </h1>
-        <p className="text-muted-foreground">
-          {isCustomer
+      {/* Page Header - using shared component */}
+      <PageHeader
+        title={isCustomer ? "Đặt sân của tôi" : "Quản lý đặt sân"}
+        subtitle={
+          isCustomer
             ? "Xem và chỉnh sửa các đơn đặt sân của bạn"
-            : "Xem và chỉnh sửa thông tin các đơn đặt sân"}
-        </p>
-      </div>
+            : "Xem và chỉnh sửa thông tin các đơn đặt sân"
+        }
+      />
 
       <Separator />
 
@@ -138,7 +120,7 @@ export default function BookingManagePage() {
       {/* Table */}
       {isLoading ? (
         <div className="flex items-center justify-center py-12">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+          <LoadingSpinner />
         </div>
       ) : (
         <BookingTable rows={filteredRows} onRowClick={handleRowClick} />
@@ -146,9 +128,9 @@ export default function BookingManagePage() {
 
       {/* Detail Dialog */}
       <BookingDetailDialog
-        booking={selectedBooking}
+        booking={selectedBooking ?? null}
         open={dialogOpen}
-        onOpenChange={setDialogOpen}
+        onOpenChange={handleDialogClose}
       />
     </div>
   );

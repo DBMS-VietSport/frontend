@@ -24,6 +24,8 @@ import {
   getPerformanceStats,
   updateEmployee,
 } from "@/lib/employees/mockRepo";
+import { LoadingSpinner } from "@/components/shared";
+import { logger } from "@/lib/utils/logger";
 
 export default function EmployeeDetailPage() {
   const router = useRouter();
@@ -67,7 +69,7 @@ export default function EmployeeDetailPage() {
       setSalaryHistory(salaryData);
       setPerformanceStats(performanceData);
     } catch (error) {
-      console.error("Failed to load employee data:", error);
+      logger.error("Failed to load employee data:", error);
       toast.error("Không thể tải thông tin nhân viên");
     } finally {
       setIsLoading(false);
@@ -91,7 +93,7 @@ export default function EmployeeDetailPage() {
       setIsEditing(false);
       toast.success("Cập nhật thông tin thành công");
     } catch (error) {
-      console.error("Failed to update employee:", error);
+      logger.error("Failed to update employee:", error);
       toast.error("Không thể cập nhật thông tin");
     }
   };
@@ -120,7 +122,7 @@ export default function EmployeeDetailPage() {
       setDialogOpen(false);
       toast.success("Cập nhật thông tin thành công");
     } catch (error) {
-      console.error("Failed to update employee:", error);
+      logger.error("Failed to update employee:", error);
       toast.error("Không thể cập nhật thông tin");
     }
   };
@@ -129,7 +131,7 @@ export default function EmployeeDetailPage() {
     return (
       <div className="container mx-auto py-6">
         <div className="flex items-center justify-center py-12">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+          <LoadingSpinner />
         </div>
       </div>
     );

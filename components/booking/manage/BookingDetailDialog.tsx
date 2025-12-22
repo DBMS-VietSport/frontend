@@ -13,7 +13,7 @@ import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import type { BookingDetailView } from "@/lib/booking/types";
+import type { BookingDetailView } from "@/lib/types";
 import { formatVND, formatTimeRange, formatDate } from "@/lib/booking/pricing";
 import Link from "next/link";
 
@@ -156,7 +156,7 @@ export function BookingDetailDialog({
                   {booking.slots.map((slot, index) => (
                     <div
                       key={slot.id}
-                      className="flex items-center justify-between p-4 bg-gradient-to-r from-muted/50 to-muted rounded-xl border"
+                      className="flex items-center justify-between p-4 bg-linear-to-r from-muted/50 to-muted rounded-xl border"
                     >
                       <div className="flex items-center gap-3">
                         <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
@@ -177,7 +177,7 @@ export function BookingDetailDialog({
               </Card>
 
               {/* Payment Summary */}
-              <Card className="p-6 rounded-xl border-2 bg-gradient-to-br from-background to-muted/20">
+              <Card className="p-6 rounded-xl border-2 bg-linear-to-br from-background to-muted/20">
                 <h3 className="font-bold text-xl mb-5 flex items-center gap-2">
                   <span className="w-2 h-6 bg-amber-500 rounded-full"></span>
                   Chi tiết thanh toán
@@ -261,7 +261,7 @@ export function BookingDetailDialog({
                   {booking.serviceItems.map((item) => (
                     <div
                       key={item.id}
-                      className="flex items-center justify-between p-4 bg-gradient-to-r from-muted/50 to-muted rounded-xl border"
+                      className="flex items-center justify-between p-4 bg-linear-to-r from-muted/50 to-muted rounded-xl border"
                     >
                       <div className="flex-1">
                         <p className="font-semibold text-lg">

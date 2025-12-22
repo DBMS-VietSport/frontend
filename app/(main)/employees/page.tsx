@@ -3,6 +3,8 @@
 import * as React from "react";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
+import { PageHeader, LoadingSpinner } from "@/components/shared";
+import { logger } from "@/lib/utils/logger";
 import { EmployeeFilterBar } from "@/components/employees/EmployeeFilterBar";
 import { EmployeeTable } from "@/components/employees/EmployeeTable";
 import { EmployeeFormDialog } from "@/components/employees/EmployeeFormDialog";
@@ -59,7 +61,7 @@ export default function EmployeesPage() {
       const data = await listEmployees();
       setEmployees(data);
     } catch (error) {
-      console.error("Failed to load employees:", error);
+      logger.error("Failed to load employees:", error);
       toast.error("Không thể tải danh sách nhân viên");
     } finally {
       setIsLoading(false);
@@ -87,7 +89,7 @@ export default function EmployeesPage() {
       }
       await loadEmployees();
     } catch (error) {
-      console.error("Failed to save employee:", error);
+      logger.error("Failed to save employee:", error);
       toast.error("Không thể lưu nhân viên");
     }
   };
@@ -97,12 +99,10 @@ export default function EmployeesPage() {
   return (
     <div className="container mx-auto py-6 space-y-8 max-w-screen-2xl">
       {/* Page Header */}
-      <div className="space-y-2">
-        <h1 className="text-3xl font-bold tracking-tight">Quản lý nhân viên</h1>
-        <p className="text-muted-foreground">
-          Xem và quản lý thông tin nhân viên
-        </p>
-      </div>
+      <PageHeader
+        title="Quản lý nhân viên"
+        subtitle="Xem và quản lý thông tin nhân viên"
+      />
 
       <Separator />
 
@@ -133,7 +133,7 @@ export default function EmployeesPage() {
       {/* Table */}
       {isLoading ? (
         <div className="flex items-center justify-center py-12">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+          <LoadingSpinner />
         </div>
       ) : (
         <>

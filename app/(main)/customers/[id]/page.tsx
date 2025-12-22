@@ -22,6 +22,8 @@ import {
   getCustomerInvoices,
   updateCustomer,
 } from "@/lib/customers/mockRepo";
+import { LoadingSpinner } from "@/components/shared";
+import { logger } from "@/lib/utils/logger";
 
 export default function CustomerDetailPage() {
   const router = useRouter();
@@ -59,7 +61,7 @@ export default function CustomerDetailPage() {
       setBookings(bookingsData);
       setInvoices(invoicesData);
     } catch (error) {
-      console.error("Failed to load customer data:", error);
+      logger.error("Failed to load customer data:", error);
       toast.error("Không thể tải thông tin khách hàng");
     } finally {
       setIsLoading(false);
@@ -83,7 +85,7 @@ export default function CustomerDetailPage() {
       setIsEditing(false);
       toast.success("Cập nhật thông tin thành công");
     } catch (error) {
-      console.error("Failed to update customer:", error);
+      logger.error("Failed to update customer:", error);
       toast.error("Không thể cập nhật thông tin");
     }
   };
@@ -108,7 +110,7 @@ export default function CustomerDetailPage() {
       setDialogOpen(false);
       toast.success("Cập nhật thông tin thành công");
     } catch (error) {
-      console.error("Failed to update customer:", error);
+      logger.error("Failed to update customer:", error);
       toast.error("Không thể cập nhật thông tin");
     }
   };
@@ -117,7 +119,7 @@ export default function CustomerDetailPage() {
     return (
       <div className="container mx-auto py-6">
         <div className="flex items-center justify-center py-12">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+          <LoadingSpinner />
         </div>
       </div>
     );

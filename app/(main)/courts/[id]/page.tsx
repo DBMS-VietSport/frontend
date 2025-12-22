@@ -23,6 +23,8 @@ import {
   updateCourt,
   addMaintenanceReport,
 } from "@/lib/courts/mockRepo";
+import { LoadingSpinner } from "@/components/shared";
+import { logger } from "@/lib/utils/logger";
 
 export default function CourtDetailPage() {
   const router = useRouter();
@@ -62,7 +64,7 @@ export default function CourtDetailPage() {
       setMaintenanceReports(maintenanceData);
       setBookings(bookingsData);
     } catch (error) {
-      console.error("Failed to load court data:", error);
+      logger.error("Failed to load court data:", error);
       toast.error("Không thể tải thông tin sân");
     } finally {
       setIsLoading(false);
@@ -86,7 +88,7 @@ export default function CourtDetailPage() {
       setIsEditing(false);
       toast.success("Cập nhật thông tin thành công");
     } catch (error) {
-      console.error("Failed to update court:", error);
+      logger.error("Failed to update court:", error);
       toast.error("Không thể cập nhật thông tin");
     }
   };
@@ -101,7 +103,7 @@ export default function CourtDetailPage() {
       setDialogOpen(false);
       toast.success("Cập nhật thông tin thành công");
     } catch (error) {
-      console.error("Failed to update court:", error);
+      logger.error("Failed to update court:", error);
       toast.error("Không thể cập nhật thông tin");
     }
   };
@@ -119,7 +121,7 @@ export default function CourtDetailPage() {
         setCourt(updatedCourt);
       }
     } catch (error) {
-      console.error("Failed to add maintenance:", error);
+      logger.error("Failed to add maintenance:", error);
       throw error;
     }
   };
@@ -128,7 +130,7 @@ export default function CourtDetailPage() {
     return (
       <div className="container mx-auto py-6">
         <div className="flex items-center justify-center py-12">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+          <LoadingSpinner />
         </div>
       </div>
     );

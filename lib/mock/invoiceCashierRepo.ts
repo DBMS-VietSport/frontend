@@ -13,7 +13,7 @@ import {
   mockServices,
   mockBranchServices,
 } from "@/lib/booking/mockRepo";
-import type { Invoice, CourtBooking } from "@/lib/booking/types";
+import type { Invoice, CourtBooking } from "@/lib/types";
 
 // In-memory store for cashier invoices (in real app, this would be in database)
 let cashierInvoices: Invoice[] = [];

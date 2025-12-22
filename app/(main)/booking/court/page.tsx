@@ -10,7 +10,7 @@ import {
 } from "@/components/booking";
 import { Separator } from "@/components/ui/separator";
 import { mockCourtTypes } from "@/components/booking/mockData";
-import type { Court, CourtType, TimeSlot } from "@/components/booking/types";
+import type { CustomerCourt as Court, CustomerCourtType as CourtType, TimeSlot } from "@/lib/types";
 import { useBookingFlowStore } from "@/lib/booking/useBookingFlowStore";
 import { useAuth } from "@/lib/auth/useAuth";
 import { BookingProgress } from "@/components/booking";

@@ -36,13 +36,10 @@ export default function ForgotPasswordPage() {
 
   const onSubmit = async (data: ForgotPasswordFormData) => {
     try {
-      console.log("Submitting email:", data.email);
       const result = passwordResetRepo.requestReset(data.email);
-      console.log("Reset result:", result);
 
       if (result.success) {
         const otpCode = passwordResetRepo.getOtp(data.email);
-        console.log("OTP code:", otpCode);
 
         if (otpCode) {
           toast.success(`Mã OTP đã được gửi tới email của bạn: ${otpCode}`, {
@@ -59,8 +56,7 @@ export default function ForgotPasswordPage() {
       } else {
         toast.error("Email không tồn tại trong hệ thống");
       }
-    } catch (error) {
-      console.error("Error in onSubmit:", error);
+    } catch {
       toast.error("Đã xảy ra lỗi. Vui lòng thử lại.");
     }
   };

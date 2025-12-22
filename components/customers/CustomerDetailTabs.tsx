@@ -32,6 +32,7 @@ import type {
 } from "@/lib/customers/types";
 import { formatDate, formatVND, calculateAge } from "@/lib/customers/utils";
 import { mockCustomerLevels } from "@/lib/customers/mockRepo";
+import { logger } from "@/lib/utils/logger";
 
 interface CustomerDetailTabsProps {
   customer: Customer;
@@ -77,7 +78,7 @@ export function CustomerDetailTabs({
       await onSave(editData);
       onEditToggle();
     } catch (error) {
-      console.error("Failed to save:", error);
+      logger.error("Failed to save:", error);
     } finally {
       setIsSaving(false);
     }

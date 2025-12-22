@@ -22,7 +22,7 @@ import { CalendarIcon, Search, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatDate } from "@/lib/booking/pricing";
 import { mockCourtTypes } from "@/lib/booking/mockRepo";
-import type { PaymentStatusUI } from "@/lib/booking/types";
+import type { PaymentStatusUI } from "@/lib/types";
 
 export interface FilterValues {
   date: Date | null;

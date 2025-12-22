@@ -29,6 +29,8 @@ import {
   RefundInvoiceDialog,
   ProcessRefundDialog,
 } from "@/components/invoices";
+import { PageHeader } from "@/components/shared";
+import { logger } from "@/lib/utils/logger";
 
 export default function InvoiceManagePage() {
   const { user } = useAuth();
@@ -70,7 +72,7 @@ export default function InvoiceManagePage() {
       setInvoices(results);
       setSummary(summaryData);
     } catch (error) {
-      console.error("Failed to load invoices:", error);
+      logger.error("Failed to load invoices:", error);
       toast.error("Không thể tải danh sách hóa đơn");
     } finally {
       setLoading(false);
@@ -89,7 +91,7 @@ export default function InvoiceManagePage() {
         setDetailDialogOpen(true);
       }
     } catch (error) {
-      console.error("Failed to load invoice detail:", error);
+      logger.error("Failed to load invoice detail:", error);
       toast.error("Không thể tải chi tiết hóa đơn");
     }
   };
@@ -104,7 +106,7 @@ export default function InvoiceManagePage() {
       setDetailDialogOpen(false);
       await loadInvoices();
     } catch (error) {
-      console.error("Failed to cancel invoice:", error);
+      logger.error("Failed to cancel invoice:", error);
       toast.error("Không thể hủy hóa đơn");
     }
   };
@@ -124,7 +126,7 @@ export default function InvoiceManagePage() {
       setDetailDialogOpen(false);
       await loadInvoices();
     } catch (error) {
-      console.error("Failed to create refund:", error);
+      logger.error("Failed to create refund:", error);
       toast.error("Không thể tạo yêu cầu hoàn tiền");
     }
   };
@@ -144,7 +146,7 @@ export default function InvoiceManagePage() {
         }
       }
     } catch (error) {
-      console.error("Failed to mark as paid:", error);
+      logger.error("Failed to mark as paid:", error);
       toast.error("Không thể cập nhật trạng thái");
     }
   };
@@ -176,7 +178,7 @@ export default function InvoiceManagePage() {
       // Refresh invoice list
       await loadInvoices();
     } catch (error) {
-      console.error("Failed to process refund:", error);
+      logger.error("Failed to process refund:", error);
       toast.error("Không thể xử lý hoàn tiền");
     }
   };
@@ -191,7 +193,7 @@ export default function InvoiceManagePage() {
         toast.success("Đã làm mới thông tin hóa đơn");
       }
     } catch (error) {
-      console.error("Failed to refresh invoice detail:", error);
+      logger.error("Failed to refresh invoice detail:", error);
       toast.error("Không thể làm mới thông tin");
     }
   };
@@ -206,12 +208,10 @@ export default function InvoiceManagePage() {
     >
       <div className="container mx-auto py-6 space-y-8 max-w-screen-2xl">
         {/* Page Header */}
-        <div className="space-y-2">
-          <h1 className="text-3xl font-bold tracking-tight">Quản lý hóa đơn</h1>
-          <p className="text-muted-foreground">
-            Xem, tìm kiếm và quản lý tất cả hóa đơn trong hệ thống
-          </p>
-        </div>
+        <PageHeader
+          title="Quản lý hóa đơn"
+          subtitle="Xem, tìm kiếm và quản lý tất cả hóa đơn trong hệ thống"
+        />
 
         <Separator />
 

@@ -30,7 +30,9 @@ import type {
   UpdateCourtTimePayload,
   UpdateServicesPayload,
   PricingCalculation,
-} from "@/lib/booking/types";
+} from "@/lib/types";
+import { LoadingSpinner } from "@/components/shared";
+import { logger } from "@/lib/utils/logger";
 
 export default function EditBookingPage() {
   const router = useRouter();
@@ -85,7 +87,7 @@ export default function EditBookingPage() {
         }))
       );
     } catch (error) {
-      console.error("Failed to load booking:", error);
+      logger.error("Failed to load booking:", error);
       toast.error("Không thể tải thông tin booking");
     } finally {
       setIsLoading(false);
@@ -227,7 +229,7 @@ export default function EditBookingPage() {
       toast.success(message);
       router.push("/booking/manage");
     } catch (error) {
-      console.error("Failed to save changes:", error);
+      logger.error("Failed to save changes:", error);
       toast.error("Không thể lưu thay đổi");
     } finally {
       setIsSaving(false);
@@ -256,7 +258,7 @@ export default function EditBookingPage() {
       toast.success("Đã hủy booking thành công");
       router.push("/booking/manage");
     } catch (e) {
-      console.error(e);
+      logger.error("Cancel booking failed:", e);
       toast.error("Hủy booking thất bại");
     } finally {
       setIsSaving(false);
@@ -267,7 +269,7 @@ export default function EditBookingPage() {
     return (
       <div className="container mx-auto py-6">
         <div className="flex items-center justify-center py-12">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+          <LoadingSpinner />
         </div>
       </div>
     );

@@ -11,9 +11,11 @@ import type {
   CreateCourtPayload,
   UpdateCourtPayload,
 } from "@/lib/courts/types";
-import { courtRepo } from "@/lib/mock";
+import { listCourts, addCourt, updateCourt } from "@/lib/courts/mockRepo";
 import { searchCourts, filterByCourtType } from "@/lib/courts/selectors";
 import { toast } from "sonner";
+import { LoadingSpinner, PageHeader } from "@/components/shared";
+import { logger } from "@/lib/utils/logger";
 
 export default function CourtsPage() {
   const [courts, setCourts] = React.useState<Court[]>([]);
@@ -40,10 +42,10 @@ export default function CourtsPage() {
   const loadCourts = async () => {
     setIsLoading(true);
     try {
-      const data = await courtRepo.listCourts();
+      const data = await listCourts();
       setCourts(data);
     } catch (error) {
-      console.error("Failed to load courts:", error);
+      logger.error("Failed to load courts:", error);
       toast.error("Không thể tải danh sách sân");
     } finally {
       setIsLoading(false);
@@ -62,22 +64,22 @@ export default function CourtsPage() {
   const handleAddCourt = async (payload: CreateCourtPayload) => {
     try {
       // payload mapping: UI payload aligns with Court sans id/display_name
-      await courtRepo.addCourt(payload as any);
+      await addCourt(payload);
       toast.success("Đã thêm sân mới thành công");
       await loadCourts();
     } catch (error) {
-      console.error("Failed to add court:", error);
+      logger.error("Failed to add court:", error);
       toast.error("Không thể thêm sân");
     }
   };
 
   const handleUpdateCourt = async (id: number, payload: UpdateCourtPayload) => {
     try {
-      await courtRepo.updateCourt(id, payload as any);
+      await updateCourt(id, payload);
       toast.success("Cập nhật sân thành công");
       await loadCourts();
     } catch (error) {
-      console.error("Failed to update court:", error);
+      logger.error("Failed to update court:", error);
       toast.error("Không thể cập nhật sân");
     }
   };
@@ -85,12 +87,10 @@ export default function CourtsPage() {
   return (
     <div className="container mx-auto py-6 space-y-8 max-w-screen-2xl">
       {/* Page Header */}
-      <div className="space-y-2">
-        <h1 className="text-3xl font-bold tracking-tight">Quản lý sân bãi</h1>
-        <p className="text-muted-foreground">
-          Xem và quản lý thông tin các sân thể thao
-        </p>
-      </div>
+      <PageHeader
+        title="Quản lý sân bãi"
+        subtitle="Xem và quản lý thông tin các sân thể thao"
+      />
 
       <Separator />
 
@@ -120,7 +120,7 @@ export default function CourtsPage() {
       {/* Court Accordion List */}
       {isLoading ? (
         <div className="flex items-center justify-center py-12">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+          <LoadingSpinner />
         </div>
       ) : (
         <CourtAccordionList

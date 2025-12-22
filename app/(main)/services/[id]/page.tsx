@@ -28,6 +28,8 @@ import type {
 import { serviceRepo } from "@/lib/mock";
 import { formatPrice } from "@/lib/services/selectors";
 import { toast } from "sonner";
+import { LoadingSpinner } from "@/components/shared";
+import { logger } from "@/lib/utils/logger";
 
 const rentalTypes: ServiceRentalType[] = ["Dụng cụ", "Nhân sự", "Tiện ích"];
 const serviceUnits: ServiceUnit[] = [
@@ -92,7 +94,7 @@ export default function ServiceDetailPage({
         router.push("/services");
       }
     } catch (error) {
-      console.error("Failed to load service detail:", error);
+      logger.error("Failed to load service detail:", error);
       toast.error("Không thể tải thông tin dịch vụ");
     } finally {
       setIsLoading(false);
@@ -129,7 +131,7 @@ export default function ServiceDetailPage({
       setIsEditing(false);
       await loadServiceDetail();
     } catch (error) {
-      console.error("Failed to update service:", error);
+      logger.error("Failed to update service:", error);
       toast.error("Không thể cập nhật dịch vụ");
     } finally {
       setIsSaving(false);
@@ -140,7 +142,7 @@ export default function ServiceDetailPage({
     return (
       <div className="container mx-auto py-6 space-y-8 max-w-screen-2xl">
         <div className="flex items-center justify-center py-12">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+          <LoadingSpinner />
         </div>
       </div>
     );

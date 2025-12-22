@@ -10,12 +10,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { StatusBadge, LoadingSpinner, TableEmptyState } from "@/components/shared";
 import { Eye } from "lucide-react";
-import { format } from "date-fns";
-import { vi } from "date-fns/locale";
+import { formatDateTime } from "@/lib/utils/date";
 import type { InvoiceSearchResult } from "@/lib/mock/invoiceManagerRepo";
+import { formatVND } from "@/lib/booking/pricing";
 
 interface InvoiceTableProps {
   invoices: InvoiceSearchResult[];
@@ -28,29 +28,6 @@ export function InvoiceTable({
   loading,
   onRowClick,
 }: InvoiceTableProps) {
-  const formatVND = (amount: number) => {
-    return new Intl.NumberFormat("vi-VN", {
-      style: "currency",
-      currency: "VND",
-    }).format(amount);
-  };
-
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case "Paid":
-        return <Badge className="bg-green-500">Đã thanh toán</Badge>;
-      case "Unpaid":
-      case "Pending":
-        return <Badge className="bg-amber-500">Chưa thanh toán</Badge>;
-      case "Cancelled":
-        return <Badge variant="destructive">Đã hủy</Badge>;
-      case "Refunded":
-      case "Partially Refunded":
-        return <Badge className="bg-blue-500">Đã hoàn tiền</Badge>;
-      default:
-        return <Badge>{status}</Badge>;
-    }
-  };
 
   return (
     <Card>
@@ -60,12 +37,10 @@ export function InvoiceTable({
       <CardContent>
         {loading ? (
           <div className="flex items-center justify-center py-12">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+            <LoadingSpinner />
           </div>
         ) : invoices.length === 0 ? (
-          <div className="flex flex-col items-center justify-center text-center py-12">
-            <p className="text-muted-foreground">Không tìm thấy hóa đơn nào</p>
-          </div>
+          <TableEmptyState entityName="hóa đơn" className="py-12" />
         ) : (
           <div className="overflow-x-auto">
             <Table>
@@ -96,12 +71,10 @@ export function InvoiceTable({
                       {formatVND(invoice.totalAmount)}
                     </TableCell>
                     <TableCell>{invoice.paymentMethod}</TableCell>
-                    <TableCell>{getStatusBadge(invoice.status)}</TableCell>
+                    <TableCell><StatusBadge status={invoice.status} category="payment" /></TableCell>
                     <TableCell>{invoice.cashierName || "-"}</TableCell>
                     <TableCell>
-                      {format(new Date(invoice.createdAt), "dd/MM/yyyy HH:mm", {
-                        locale: vi,
-                      })}
+                      {formatDateTime(invoice.createdAt)}
                     </TableCell>
                     <TableCell className="text-center">
                       <div className="flex items-center justify-center gap-2">

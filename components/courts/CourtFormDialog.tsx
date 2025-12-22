@@ -24,6 +24,7 @@ import type {
   CourtStatus,
 } from "@/lib/courts/types";
 import { courtTypes, branches } from "@/lib/mock";
+import { logger } from "@/lib/utils/logger";
 
 interface CourtFormDialogProps {
   open: boolean;
@@ -72,7 +73,7 @@ export function CourtFormDialog({
       await onSave(formData);
       onOpenChange(false);
     } catch (error) {
-      console.error("Failed to save court:", error);
+      logger.error("Failed to save court:", error);
     } finally {
       setIsSaving(false);
     }

@@ -19,6 +19,7 @@ import {
 } from "@/components/invoices";
 import { toast } from "sonner";
 import { mockServices, mockBranchServices } from "@/lib/booking/mockRepo";
+import { logger } from "@/lib/utils/logger";
 
 export default function CashierInvoicePage() {
   const { user } = useAuth();
@@ -89,7 +90,7 @@ export default function CashierInvoicePage() {
       setServices(Array.from(existingServicesMap.values()));
       toast.success("Đã tải thông tin đặt sân");
     } catch (error) {
-      console.error("Failed to load booking:", error);
+      logger.error("Failed to load booking:", error);
       toast.error("Không thể tải thông tin đặt sân");
     } finally {
       setLoading(false);
@@ -173,7 +174,7 @@ export default function CashierInvoicePage() {
       setPaymentMethod("cash");
       setBookingCode("");
     } catch (error) {
-      console.error("Failed to create invoice:", error);
+      logger.error("Failed to create invoice:", error);
       toast.error("Không thể tạo hóa đơn");
     } finally {
       setIsSubmitting(false);

@@ -3,6 +3,8 @@
 import * as React from "react";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
+import { PageHeader, LoadingSpinner } from "@/components/shared";
+import { logger } from "@/lib/utils/logger";
 import { CustomerFilterBar } from "@/components/customers/CustomerFilterBar";
 import { CustomerTable } from "@/components/customers/CustomerTable";
 import { CustomerFormDialog } from "@/components/customers/CustomerFormDialog";
@@ -53,7 +55,7 @@ export default function CustomersPage() {
       const data = await listCustomers();
       setCustomers(data);
     } catch (error) {
-      console.error("Failed to load customers:", error);
+      logger.error("Failed to load customers:", error);
       toast.error("Không thể tải danh sách khách hàng");
     } finally {
       setIsLoading(false);
@@ -81,7 +83,7 @@ export default function CustomersPage() {
       }
       await loadCustomers();
     } catch (error) {
-      console.error("Failed to save customer:", error);
+      logger.error("Failed to save customer:", error);
       toast.error("Không thể lưu khách hàng");
     }
   };
@@ -91,14 +93,10 @@ export default function CustomersPage() {
   return (
     <div className="container mx-auto py-6 space-y-8 max-w-screen-2xl">
       {/* Page Header */}
-      <div className="space-y-2">
-        <h1 className="text-3xl font-bold tracking-tight">
-          Quản lý khách hàng
-        </h1>
-        <p className="text-muted-foreground">
-          Xem và quản lý thông tin khách hàng
-        </p>
-      </div>
+      <PageHeader
+        title="Quản lý khách hàng"
+        subtitle="Xem và quản lý thông tin khách hàng"
+      />
 
       <Separator />
 
@@ -127,7 +125,7 @@ export default function CustomersPage() {
       {/* Table */}
       {isLoading ? (
         <div className="flex items-center justify-center py-12">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+          <LoadingSpinner />
         </div>
       ) : (
         <>

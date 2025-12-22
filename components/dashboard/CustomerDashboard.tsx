@@ -7,6 +7,7 @@ import type { CustomerBookingStat } from "@/lib/mock/customerDashboardRepo";
 import { CustomerStatsCards } from "./CustomerStatsCards";
 import { UpcomingBookingsTable } from "./UpcomingBookingsTable";
 import { MembershipInfoCard } from "./MembershipInfoCard";
+import { logger } from "@/lib/utils/logger";
 
 export function CustomerDashboard() {
   const { user, loading: authLoading } = useAuth();
@@ -20,7 +21,7 @@ export function CustomerDashboard() {
       const data = await customerDashboardRepo.getStats(user.username);
       setStats(data);
     } catch (error) {
-      console.error("Failed to load customer stats:", error);
+      logger.error("Failed to load customer stats:", error);
     } finally {
       setLoadingStats(false);
     }

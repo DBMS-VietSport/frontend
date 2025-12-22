@@ -96,6 +96,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
+import { formatVND } from "@/lib/booking/pricing";
 
 // --- Components ---
 
@@ -303,12 +304,6 @@ export default function CourtUsageReportPage() {
     () => getCourtDetailsTable(filter),
     [filter]
   );
-
-  const formatVND = (n: number) =>
-    new Intl.NumberFormat("vi-VN", {
-      style: "currency",
-      currency: "VND",
-    }).format(n);
   const formatPercent = (n: number) => `${Math.round(n * 100)}%`;
 
   return (

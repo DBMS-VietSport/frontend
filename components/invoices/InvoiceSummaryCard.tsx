@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Printer } from "lucide-react";
+import { formatVND } from "@/lib/booking/pricing";
 
 interface InvoiceSummaryCardProps {
   basePrice: number;
@@ -41,12 +42,6 @@ export function InvoiceSummaryCard({
   disabled,
   isSubmitting,
 }: InvoiceSummaryCardProps) {
-  const formatVND = (amount: number) => {
-    return new Intl.NumberFormat("vi-VN", {
-      style: "currency",
-      currency: "VND",
-    }).format(amount);
-  };
 
   return (
     <Card className="sticky top-4">

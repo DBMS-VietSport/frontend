@@ -16,6 +16,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { leaveRequestRepo } from "@/lib/mock/leaveRequestRepo";
 import { useAuth } from "@/lib/auth/useAuth";
 import { toast } from "sonner";
+import { logger } from "@/lib/utils/logger";
 
 interface LeaveRequestDialogTriggerProps {
   onSuccess?: () => void;
@@ -85,7 +86,7 @@ function LeaveRequestForm({ onSuccess }: { onSuccess: () => void }) {
       onSuccess();
     } catch (err) {
       setError("Có lỗi xảy ra khi gửi yêu cầu");
-      console.error(err);
+      logger.error("Leave request failed:", err);
     } finally {
       setLoading(false);
     }

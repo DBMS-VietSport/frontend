@@ -86,6 +86,7 @@ import {
   getCancellationStats,
   RevenueReportFilter,
 } from "@/lib/mock/reportRevenue";
+import { formatVND } from "@/lib/booking/pricing";
 
 // --- Components ---
 
@@ -179,12 +180,6 @@ export default function RevenueReportPage() {
     setPaymentMethod("All");
     setStatus("All");
   };
-
-  const formatVND = (n: number) =>
-    new Intl.NumberFormat("vi-VN", {
-      style: "currency",
-      currency: "VND",
-    }).format(n);
 
   // -- Data Fetching --
   const filter: RevenueReportFilter = React.useMemo(

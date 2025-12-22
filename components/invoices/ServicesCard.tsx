@@ -4,6 +4,7 @@ import * as React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Plus, Minus } from "lucide-react";
+import { formatVND } from "@/lib/booking/pricing";
 import type { ServiceItem } from "./AddServiceDialog";
 
 interface ServicesCardProps {
@@ -21,12 +22,6 @@ export function ServicesCard({
   onQuantityChange,
   hasBooking,
 }: ServicesCardProps) {
-  const formatVND = (amount: number) => {
-    return new Intl.NumberFormat("vi-VN", {
-      style: "currency",
-      currency: "VND",
-    }).format(amount);
-  };
 
   return (
     <Card>

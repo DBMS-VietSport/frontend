@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { ArrowRight, Save, X } from "lucide-react";
 import { formatVND } from "@/lib/booking/pricing";
-import type { PricingCalculation } from "@/lib/booking/types";
+import type { PricingCalculation } from "@/lib/types";
 import { motion } from "framer-motion";
 
 interface InvoiceRecalcPanelProps {

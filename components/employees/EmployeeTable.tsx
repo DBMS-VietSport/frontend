@@ -13,7 +13,8 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Edit } from "lucide-react";
+import { Edit, Users } from "lucide-react";
+import { EmptyState } from "@/components/shared";
 import type { Employee } from "@/lib/employees/types";
 import { getRoleColor, getStatusVariant } from "@/lib/employees/utils";
 
@@ -39,29 +40,11 @@ export function EmployeeTable({ employees, onEdit }: EmployeeTableProps) {
   if (employees.length === 0) {
     return (
       <Card className="p-12 rounded-2xl">
-        <div className="flex flex-col items-center justify-center text-center">
-          <div className="rounded-full bg-muted p-6 mb-4">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className="w-12 h-12 text-muted-foreground"
-            >
-              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-              <circle cx="12" cy="7" r="4" />
-            </svg>
-          </div>
-          <h3 className="text-xl font-semibold mb-2">
-            Không tìm thấy nhân viên phù hợp
-          </h3>
-          <p className="text-muted-foreground max-w-md">
-            Thử tìm kiếm với từ khóa khác hoặc thêm nhân viên mới
-          </p>
-        </div>
+        <EmptyState
+          icon={Users}
+          title="Không tìm thấy nhân viên phù hợp"
+          description="Thử tìm kiếm với từ khóa khác hoặc thêm nhân viên mới"
+        />
       </Card>
     );
   }

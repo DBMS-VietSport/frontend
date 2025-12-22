@@ -20,7 +20,7 @@ import {
   mockServiceItems,
   mockCoaches,
 } from "@/components/booking/mockData";
-import type { ServiceItem, Coach } from "@/components/booking/types";
+import type { ServiceItem, Coach } from "@/lib/types";
 import { useBookingFlowStore } from "@/lib/booking/useBookingFlowStore";
 import { useAuth } from "@/lib/auth/useAuth";
 import {
@@ -45,6 +45,7 @@ import {
   mockBranchServices,
   mockServices,
 } from "@/lib/booking/mockRepo";
+import { logger } from "@/lib/utils/logger";
 
 interface BookingPricingRules {
   cancelWindowMinutes: number;
@@ -101,7 +102,7 @@ export default function PaymentPage() {
             setAlreadyPaid(paid);
           }
         } catch (error) {
-          console.error("Failed to load existing booking:", error);
+          logger.error("Failed to load existing booking:", error);
         }
       };
       loadExistingData();

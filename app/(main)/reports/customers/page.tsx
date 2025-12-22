@@ -97,6 +97,7 @@ import {
   getCustomerDetailsTable,
   CustomerReportFilter,
 } from "@/lib/mock/reportCustomers";
+import { formatVND } from "@/lib/booking/pricing";
 
 // --- Components ---
 
@@ -299,12 +300,6 @@ export default function CustomerReportPage() {
         r.phone_number.includes(lower)
     );
   }, [rawTableData, searchTerm]);
-
-  const formatVND = (n: number) =>
-    new Intl.NumberFormat("vi-VN", {
-      style: "currency",
-      currency: "VND",
-    }).format(n);
 
   return (
     <div className="container mx-auto py-6 space-y-8 max-w-screen-2xl">

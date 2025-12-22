@@ -33,6 +33,7 @@ import {
   type BranchSettings,
   type UpdateBranchSettingsPayload,
 } from "@/lib/mock/branchSettingsRepo";
+import { logger } from "@/lib/utils/logger";
 
 // --- Helpers ---
 
@@ -87,7 +88,7 @@ export default function BranchSettingsPage() {
           }
         }
       } catch (error) {
-        console.error("Failed to load branches", error);
+      logger.error("Failed to load branches", error);
         toast.error("Không thể tải danh sách chi nhánh");
       }
     };
@@ -106,7 +107,7 @@ export default function BranchSettingsPage() {
         setOriginalSettings(data);
         setErrors({});
       } catch (error) {
-        console.error("Failed to load settings", error);
+        logger.error("Failed to load settings", error);
         toast.error("Không thể tải cấu hình chi nhánh");
         setSettings(null);
       } finally {
@@ -187,7 +188,7 @@ export default function BranchSettingsPage() {
       setOriginalSettings(settings); // Update snapshot
       toast.success(groupName ? `Đã lưu ${groupName}` : "Đã lưu cấu hình");
     } catch (error) {
-      console.error("Save failed", error);
+      logger.error("Save failed", error);
       toast.error("Lưu thất bại");
     } finally {
       setIsSaving(false);

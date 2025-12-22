@@ -12,7 +12,7 @@ import { mockServiceItems, mockCoaches } from "@/components/booking/mockData";
 import { mockCourts, mockCourtTypes } from "@/components/booking/mockData";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, AlertCircle } from "lucide-react";
-import type { ServiceItem, Coach, TimeSlot } from "@/components/booking/types";
+import type { ServiceItem, Coach, TimeSlot } from "@/lib/types";
 import { useBookingFlowStore } from "@/lib/booking/useBookingFlowStore";
 import { useAuth } from "@/lib/auth/useAuth";
 import {

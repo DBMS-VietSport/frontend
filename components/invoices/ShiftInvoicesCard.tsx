@@ -10,27 +10,15 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
+import { StatusBadge } from "@/components/shared";
 import type { InvoiceRow } from "@/lib/mock/invoiceCashierRepo";
+import { formatVND } from "@/lib/booking/pricing";
 
 interface ShiftInvoicesCardProps {
   invoices: InvoiceRow[];
 }
 
 export function ShiftInvoicesCard({ invoices }: ShiftInvoicesCardProps) {
-  const formatVND = (amount: number) => {
-    return new Intl.NumberFormat("vi-VN", {
-      style: "currency",
-      currency: "VND",
-    }).format(amount);
-  };
-
-  const getStatusBadge = (status: string) => {
-    if (status === "Paid") {
-      return <Badge variant="default">Đã thanh toán</Badge>;
-    }
-    return <Badge variant="destructive">Chưa thanh toán</Badge>;
-  };
 
   return (
     <Card>
@@ -64,7 +52,7 @@ export function ShiftInvoicesCard({ invoices }: ShiftInvoicesCardProps) {
                       {formatVND(invoice.totalAmount)}
                     </TableCell>
                     <TableCell className="text-center">
-                      {getStatusBadge(invoice.status)}
+                      <StatusBadge status={invoice.status} category="payment" />
                     </TableCell>
                   </TableRow>
                 ))}

@@ -25,6 +25,7 @@ import type {
   ServiceStatus,
 } from "@/lib/services/types";
 import { branches } from "@/lib/mock";
+import { logger } from "@/lib/utils/logger";
 
 interface ServiceFormDialogProps {
   open: boolean;
@@ -91,7 +92,7 @@ export function ServiceFormDialog({
       await onSave(formData);
       onOpenChange(false);
     } catch (error) {
-      console.error("Failed to create service:", error);
+      logger.error("Failed to create service:", error);
     } finally {
       setIsSaving(false);
     }

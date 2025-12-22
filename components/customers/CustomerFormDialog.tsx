@@ -21,6 +21,7 @@ import {
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import type { Customer, CreateCustomerPayload } from "@/lib/customers/types";
 import { mockCustomerLevels } from "@/lib/customers/mockRepo";
+import { logger } from "@/lib/utils/logger";
 
 interface CustomerFormDialogProps {
   open: boolean;
@@ -93,7 +94,7 @@ export function CustomerFormDialog({
       await onSave(formData);
       onOpenChange(false);
     } catch (error) {
-      console.error("Failed to save customer:", error);
+      logger.error("Failed to save customer:", error);
     } finally {
       setIsSaving(false);
     }
