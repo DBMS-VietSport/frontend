@@ -187,7 +187,7 @@ export async function getBookingsForCourt(
 
   return bookings.map((booking) => {
     const customer = mockCustomers.find((c) => c.id === booking.customer_id);
-    const slots = booking.slots;
+    const slots = booking.slots || [];
 
     // Get time range
     let timeRange = "-";

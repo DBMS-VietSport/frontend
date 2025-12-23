@@ -80,7 +80,7 @@ export default function EditBookingPage() {
       // Initialize edit state
       setEditedCourtId(bookingData.court_id);
       setEditedSlots(
-        bookingData.slots.map((s) => ({
+        (bookingData.slots ?? []).map((s: { id: number; start_time: string; end_time: string }) => ({
           id: s.id,
           start_time: s.start_time,
           end_time: s.end_time,
@@ -109,7 +109,7 @@ export default function EditBookingPage() {
     const court = mockCourts.find((c) => c.id === booking.court_id)!;
     return calcTotals(
       court,
-      booking.slots,
+      booking.slots ?? [],
       serviceItems,
       mockBranchServices,
       mockServices,
@@ -153,7 +153,7 @@ export default function EditBookingPage() {
     const slotsChanged =
       JSON.stringify(editedSlots) !==
       JSON.stringify(
-        booking.slots.map((s) => ({
+        (booking.slots ?? []).map((s: { id: number; start_time: string; end_time: string }) => ({
           id: s.id,
           start_time: s.start_time,
           end_time: s.end_time,
@@ -323,7 +323,7 @@ export default function EditBookingPage() {
                 <CourtTimeEditor
                   bookingId={bookingId}
                   initialCourtId={booking.court_id}
-                  initialSlots={booking.slots}
+                  initialSlots={booking.slots ?? []}
                   onChange={handleCourtTimeChange}
                 />
               </TabsContent>
@@ -345,10 +345,10 @@ export default function EditBookingPage() {
                     };
                   })}
                   defaultStartTime={
-                    booking.slots[0]?.start_time || new Date().toISOString()
+                    (booking.slots ?? [])[0]?.start_time || new Date().toISOString()
                   }
                   defaultEndTime={
-                    booking.slots[booking.slots.length - 1]?.end_time ||
+                    (booking.slots ?? [])[(booking.slots ?? []).length - 1]?.end_time ||
                     new Date().toISOString()
                   }
                   invoices={invoices}

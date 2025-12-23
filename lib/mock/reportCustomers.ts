@@ -192,6 +192,7 @@ function filterData(filter: CustomerReportFilter) {
   let relevantCustomers: CustomerWithCreatedAt[] = customers.filter((c) => {
     if (
       filter.levelIds.length > 0 &&
+      c.customer_level_id !== undefined &&
       !filter.levelIds.includes(c.customer_level_id)
     )
       return false;
@@ -254,7 +255,7 @@ export function getCustomerReportKPIs(filter: CustomerReportFilter) {
   // Avg Revenue per Active Customer
   const arpc = activeCount > 0 ? totalRevenue / activeCount : 0;
 
-  const totalPoints = customers.reduce((acc, c) => acc + c.bonus_point, 0);
+  const totalPoints = customers.reduce((acc, c) => acc + (c.bonus_point || 0), 0);
   const avgPoints = customers.length > 0 ? totalPoints / customers.length : 0;
 
   return {
@@ -289,6 +290,7 @@ export function getNewCustomersTrend(filter: CustomerReportFilter) {
   const relevantCustomers = customers.filter((c) => {
     if (
       filter.levelIds.length > 0 &&
+      c.customer_level_id !== undefined &&
       !filter.levelIds.includes(c.customer_level_id)
     )
       return false;

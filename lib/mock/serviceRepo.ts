@@ -9,9 +9,9 @@ export interface ServiceRow {
   rental_type: Service["rental_type"];
   unit: Service["unit"];
   unit_price: number;
-  current_stock: number;
-  min_stock_threshold: number;
-  status: BranchService["status"];
+  current_stock?: number;
+  min_stock_threshold?: number;
+  status?: BranchService["status"];
   branch_id: number;
   branch_name: string;
 }

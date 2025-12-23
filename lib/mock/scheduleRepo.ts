@@ -142,7 +142,7 @@ export function getMyShifts(
         start_time: formatTime(workShift.start_time),
         end_time: formatTime(workShift.end_time),
         role: getRoleName(employee.role_id),
-        branch: getBranchName(employee.branch_id),
+        branch: getBranchName(employee.branch_id || 0),
         status:
           assignment.status === "confirmed" || assignment.status === "Assigned"
             ? "Assigned"

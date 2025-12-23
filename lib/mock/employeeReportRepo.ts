@@ -170,7 +170,7 @@ function generateMockEmployeeReportData() {
     const yNum = m.getFullYear();
 
     employees.forEach((emp) => {
-      const gross = emp.base_salary + emp.base_allowance;
+      const gross = (emp.base_salary || 0) + (emp.base_allowance || 0);
       // Mock commission based on role
       const commission =
         emp.role_id === 3 ? Math.floor(Math.random() * 2000000) : 0;

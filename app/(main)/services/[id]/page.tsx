@@ -76,9 +76,9 @@ export default function ServiceDetailPage({
         unit: serviceDetail.service.unit,
         rental_type: serviceDetail.service.rental_type,
         unit_price: serviceDetail.branchService.unit_price,
-        current_stock: serviceDetail.branchService.current_stock,
-        min_stock_threshold: serviceDetail.branchService.min_stock_threshold,
-        status: serviceDetail.branchService.status,
+        current_stock: serviceDetail.branchService.current_stock ?? 0,
+        min_stock_threshold: serviceDetail.branchService.min_stock_threshold ?? 10,
+        status: serviceDetail.branchService.status ?? "Available",
       });
     }
   }, [serviceDetail]);
@@ -154,7 +154,7 @@ export default function ServiceDetailPage({
 
   const { service, branchService, branch_name } = serviceDetail;
   const lowStock =
-    branchService.current_stock < branchService.min_stock_threshold;
+    (branchService.current_stock ?? 0) < (branchService.min_stock_threshold ?? 10);
 
   return (
     <div className="container mx-auto py-6 space-y-8 max-w-screen-2xl">
@@ -282,10 +282,10 @@ export default function ServiceDetailPage({
                           unit: service.unit,
                           rental_type: service.rental_type,
                           unit_price: branchService.unit_price,
-                          current_stock: branchService.current_stock,
+                          current_stock: branchService.current_stock ?? 0,
                           min_stock_threshold:
-                            branchService.min_stock_threshold,
-                          status: branchService.status,
+                            branchService.min_stock_threshold ?? 10,
+                          status: branchService.status ?? "Available",
                         });
                       }}
                       disabled={isSaving}
@@ -426,10 +426,10 @@ export default function ServiceDetailPage({
                           unit: service.unit,
                           rental_type: service.rental_type,
                           unit_price: branchService.unit_price,
-                          current_stock: branchService.current_stock,
+                          current_stock: branchService.current_stock ?? 0,
                           min_stock_threshold:
-                            branchService.min_stock_threshold,
-                          status: branchService.status,
+                            branchService.min_stock_threshold ?? 10,
+                          status: branchService.status ?? "Available",
                         });
                       }}
                       disabled={isSaving}

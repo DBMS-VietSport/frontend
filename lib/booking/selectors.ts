@@ -8,6 +8,7 @@ import type {
   ServiceBookingItem,
   ServiceBookingItemDetail,
   BookingSlot,
+  BookingStatus,
 } from "./types";
 import {
   mockBranches,
@@ -98,9 +99,9 @@ export function makeBookingRow(
     courtType: courtType?.name || "-",
     customerName: customer?.full_name || "-",
     employeeName: employee?.full_name,
-    timeRange: getTimeRange(booking.slots),
+    timeRange: getTimeRange(booking.slots ?? []),
     paymentStatus: getPaymentStatus(booking.id, booking.status, invoices),
-    courtStatus: booking.status,
+    courtStatus: booking.status as BookingStatus,
     createdAt: booking.created_at,
   };
 }
@@ -145,7 +146,8 @@ export function makeBookingDetailView(
   );
 
   // Calculate fees (basic calculation here, full calculation in pricing.ts)
-  const courtFee = court.base_hourly_price * (booking.slots.length || 1);
+  const slots: BookingSlot[] = booking.slots || [];
+  const courtFee = court.base_hourly_price * (slots.length || 1);
   const serviceFee = serviceItemDetails.reduce((sum, item) => {
     return sum + item.branchService.unit_price * item.quantity;
   }, 0);
@@ -158,7 +160,7 @@ export function makeBookingDetailView(
     court,
     courtTypeData,
     branch,
-    slots: booking.slots,
+    slots,
     invoices,
     serviceItems: serviceItemDetails,
     courtFee,

@@ -14,9 +14,12 @@ import type {
   ServiceBooking,
   ServiceBookingItem,
   Invoice,
+} from "./types";
+
+import type {
   UpdateCourtTimePayload,
   UpdateServicesPayload,
-} from "./types";
+} from "@/lib/types/booking";
 
 // Branches
 export const mockBranches: Branch[] = [
@@ -41,6 +44,7 @@ export const mockCourts: Court[] = [
     court_type_id: 1,
     branch_id: 1,
     base_hourly_price: 100000,
+    status: "Available",
   },
   {
     id: 2,
@@ -48,6 +52,7 @@ export const mockCourts: Court[] = [
     court_type_id: 1,
     branch_id: 1,
     base_hourly_price: 100000,
+    status: "Available",
   },
   {
     id: 3,
@@ -55,6 +60,7 @@ export const mockCourts: Court[] = [
     court_type_id: 1,
     branch_id: 1,
     base_hourly_price: 120000,
+    status: "Available",
   },
   {
     id: 4,
@@ -62,6 +68,7 @@ export const mockCourts: Court[] = [
     court_type_id: 4,
     branch_id: 1,
     base_hourly_price: 200000,
+    status: "Available",
   },
   {
     id: 5,
@@ -69,6 +76,7 @@ export const mockCourts: Court[] = [
     court_type_id: 1,
     branch_id: 3,
     base_hourly_price: 80000,
+    status: "Available",
   },
   {
     id: 6,
@@ -76,6 +84,7 @@ export const mockCourts: Court[] = [
     court_type_id: 4,
     branch_id: 3,
     base_hourly_price: 150000,
+    status: "Available",
   },
   {
     id: 7,
@@ -83,6 +92,7 @@ export const mockCourts: Court[] = [
     court_type_id: 3,
     branch_id: 2,
     base_hourly_price: 150000,
+    status: "Available",
   },
   {
     id: 8,
@@ -90,6 +100,7 @@ export const mockCourts: Court[] = [
     court_type_id: 2,
     branch_id: 2,
     base_hourly_price: 120000,
+    status: "Available",
   },
 ];
 
@@ -571,8 +582,9 @@ mockServiceBookingItems.push(...randomData.serviceItems);
 
 function ensureServiceDataForBooking(bookingId: number) {
   const booking = mockCourtBookings.find((b) => b.id === bookingId);
-  if (!booking || booking.slots.length === 0) return;
+  if (!booking || !booking.slots || booking.slots.length === 0) return;
 
+  const slots = booking.slots; // TypeScript now knows slots is defined and non-empty
   const court = mockCourts.find((c) => c.id === booking.court_id);
   if (!court) return;
 
@@ -603,8 +615,8 @@ function ensureServiceDataForBooking(bookingId: number) {
     mockServiceBookingItems.push({
       id: nextServiceItemId++,
       quantity,
-      start_time: booking.slots[0].start_time,
-      end_time: booking.slots[booking.slots.length - 1].end_time,
+      start_time: slots[0].start_time,
+      end_time: slots[slots.length - 1].end_time,
       service_booking_id: serviceBooking!.id,
       branch_service_id: branchService.id,
     });
@@ -714,7 +726,7 @@ export async function updateBookingCourtTime(
   mockBookingSlots = mockBookingSlots.filter((s) => s.court_booking_id !== id);
 
   // Add new slots
-  const newSlots = payload.slots.map((slot) => ({
+  const newSlots = payload.slots.map((slot: { start_time: string; end_time: string }) => ({
     id: nextSlotId++,
     start_time: slot.start_time,
     end_time: slot.end_time,
@@ -830,7 +842,7 @@ export function hasConflict(
 
   // Check each slot
   for (const booking of courtBookings) {
-    for (const slot of booking.slots) {
+    for (const slot of booking.slots ?? []) {
       const slotStart = new Date(slot.start_time);
       const slotEnd = new Date(slot.end_time);
 

@@ -44,14 +44,17 @@ export function filterByStatus(
  * Check if service is low stock (below threshold)
  */
 export function isLowStock(service: ServiceRow): boolean {
-  return service.current_stock < service.min_stock_threshold;
+  const stock = service.current_stock ?? 0;
+  const threshold = service.min_stock_threshold ?? 0;
+  return stock < threshold;
 }
 
 /**
  * Get stock status color
  */
 export function getStockStatusColor(service: ServiceRow): string {
-  if (service.current_stock === 0) return "text-red-500";
+  const stock = service.current_stock ?? 0;
+  if (stock === 0) return "text-red-500";
   if (isLowStock(service)) return "text-yellow-600";
   return "text-green-600";
 }
@@ -87,7 +90,9 @@ export function sortByStock(
   ascending: boolean = true
 ): ServiceRow[] {
   return [...services].sort((a, b) => {
-    const comparison = a.current_stock - b.current_stock;
+    const stockA = a.current_stock ?? 0;
+    const stockB = b.current_stock ?? 0;
+    const comparison = stockA - stockB;
     return ascending ? comparison : -comparison;
   });
 }

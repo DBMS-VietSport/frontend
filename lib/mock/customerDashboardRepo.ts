@@ -65,7 +65,8 @@ function calculateTotalPlayHours(bookings: CourtBooking[]): number {
   let totalHours = 0;
 
   for (const booking of bookings) {
-    for (const slot of booking.slots) {
+    const slots = booking.slots || [];
+    for (const slot of slots) {
       const start = new Date(slot.start_time);
       const end = new Date(slot.end_time);
       const hours = (end.getTime() - start.getTime()) / (1000 * 60 * 60);
@@ -94,7 +95,8 @@ function getUpcomingBookings(
     if (booking.status === "Cancelled") continue;
 
     // Check if any slot is in the future
-    const hasFutureSlot = booking.slots.some((slot) => {
+    const slots = booking.slots || [];
+    const hasFutureSlot = slots.some((slot) => {
       const slotDate = new Date(slot.start_time);
       return slotDate >= now;
     });
@@ -107,8 +109,7 @@ function getUpcomingBookings(
       ? mockBranches.find((b) => b.id === court.branch_id)
       : null;
 
-    // Get time range
-    const slots = booking.slots;
+    // Get time range (slots already defined above)
     let timeRange = "-";
     let date = "-";
     let dateISO = "";

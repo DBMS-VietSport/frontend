@@ -17,9 +17,9 @@ export interface BranchService {
   service_id: number;
   branch_id: number;
   unit_price: number;
-  current_stock: number;
-  min_stock_threshold: number;
-  status: ServiceStatus;
+  current_stock?: number;
+  min_stock_threshold?: number;
+  status?: ServiceStatus;
 }
 
 // UI projection for table display
@@ -30,9 +30,9 @@ export interface ServiceRow {
   rental_type: ServiceRentalType;
   unit: ServiceUnit;
   unit_price: number;
-  current_stock: number;
-  min_stock_threshold: number;
-  status: ServiceStatus;
+  current_stock?: number;
+  min_stock_threshold?: number;
+  status?: ServiceStatus;
   branch_id: number;
   branch_name: string;
 }

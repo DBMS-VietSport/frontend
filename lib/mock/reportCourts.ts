@@ -245,7 +245,7 @@ export function getReportKPIs(filter: CourtReportFilter) {
     (cancelledCount + noShowCount) * avgBookingValue
   );
 
-      return {
+  return {
     totalBookings,
     totalBookedHours,
     occupancyRate,
@@ -288,7 +288,7 @@ export function getTopCourts(filter: CourtReportFilter) {
 
     if (!courtMap.has(b.court_id)) {
       courtMap.set(b.court_id, {
-        name: court.display_name,
+        name: court.display_name || court.name || `Sân ${court.id}`,
         bookings: 0,
         hours: 0,
       });
@@ -390,9 +390,9 @@ export function getCourtDetailsTable(filter: CourtReportFilter) {
     const occupancy =
       capacityHours > 0 ? (totalHours / capacityHours) * 100 : 0;
 
-      return {
+    return {
       id: court.id,
-      name: court.display_name,
+      name: court.display_name || court.name || `Sân ${court.id}`,
       branchName: branch?.name || "",
       typeName: type?.name || "",
       bookingCount,

@@ -148,7 +148,7 @@ export async function getCustomerBookings(
       : null;
 
     // Get time range
-    const slots = booking.slots;
+    const slots = booking.slots || [];
     let timeRange = "-";
     if (slots.length > 0) {
       const start = new Date(slots[0].start_time);

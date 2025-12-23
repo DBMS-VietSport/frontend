@@ -12,6 +12,8 @@ import type {
   UpdateServicesPayload,
 } from "@/lib/types/booking";
 
+import type { BookingStatus } from "@/lib/types/entities";
+
 // Import mock repo functions (temporary - will be replaced with real API calls)
 import {
   listBookings as mockListBookings,
@@ -40,6 +42,7 @@ export interface BookingsFilter {
   dateFrom?: string;
   dateTo?: string;
   search?: string;
+  [key: string]: unknown;
 }
 
 export interface CreateBookingInput {
@@ -69,8 +72,9 @@ function toBookingRow(booking: Awaited<ReturnType<typeof mockGetBooking>>): Book
 
   // Calculate time range
   let timeRange = "-";
-  if (booking.slots.length > 0) {
-    const sortedSlots = [...booking.slots].sort(
+  const slots = booking.slots ?? [];
+  if (slots.length > 0) {
+    const sortedSlots = [...slots].sort(
       (a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime()
     );
     const start = new Date(sortedSlots[0].start_time);
@@ -98,7 +102,7 @@ function toBookingRow(booking: Awaited<ReturnType<typeof mockGetBooking>>): Book
     employeeName: employee?.full_name,
     timeRange,
     paymentStatus: booking.status === "Paid" ? "Đã thanh toán" : "Chưa thanh toán",
-    courtStatus: booking.status,
+    courtStatus: booking.status as BookingStatus,
     createdAt: booking.created_at,
   };
 }
@@ -187,7 +191,7 @@ export async function fetchBookingById(id: number): Promise<BookingDetailView | 
       service: service!,
       branchService: branchService!,
       trainerNames: item.trainer_ids?.map(
-        (tid) => mockEmployees.find((e) => e.id === tid)?.full_name || ""
+        (tid: number) => mockEmployees.find((e) => e.id === tid)?.full_name || ""
       ),
     };
   });
@@ -199,7 +203,7 @@ export async function fetchBookingById(id: number): Promise<BookingDetailView | 
     court,
     courtTypeData: courtType,
     branch,
-    slots: booking.slots,
+    slots: booking.slots ?? [],
     invoices,
     serviceBooking: servicesData.serviceBooking || undefined,
     serviceItems,

@@ -83,9 +83,9 @@ export function ServiceDetailDialog({
         unit: service.unit,
         rental_type: service.rental_type,
         unit_price: service.unit_price,
-        current_stock: service.current_stock,
-        min_stock_threshold: service.min_stock_threshold,
-        status: service.status,
+        current_stock: service.current_stock ?? 0,
+        min_stock_threshold: service.min_stock_threshold ?? 10,
+        status: service.status ?? "Available",
       });
       setIsEditing(false);
     }
@@ -238,9 +238,9 @@ export function ServiceDetailDialog({
                               unit: service.unit,
                               rental_type: service.rental_type,
                               unit_price: service.unit_price,
-                              current_stock: service.current_stock,
-                              min_stock_threshold: service.min_stock_threshold,
-                              status: service.status,
+                              current_stock: service.current_stock ?? 0,
+                              min_stock_threshold: service.min_stock_threshold ?? 10,
+                              status: service.status ?? "Available",
                             });
                           }
                         }}
@@ -393,9 +393,9 @@ export function ServiceDetailDialog({
                               unit: service.unit,
                               rental_type: service.rental_type,
                               unit_price: service.unit_price,
-                              current_stock: service.current_stock,
-                              min_stock_threshold: service.min_stock_threshold,
-                              status: service.status,
+                              current_stock: service.current_stock ?? 0,
+                              min_stock_threshold: service.min_stock_threshold ?? 10,
+                              status: service.status ?? "Available",
                             });
                           }
                         }}

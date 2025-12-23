@@ -1,6 +1,3 @@
-// Export all booking types
-export * from "./types";
-
 // Export all booking mock data
 export * from "./mockData";
 
