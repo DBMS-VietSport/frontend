@@ -1,0 +1,7 @@
+src/app/(main)/booking/payment/page.tsx(171,15): error TS1005: ',' expected.
+src/app/(main)/booking/payment/page.tsx(172,9): error TS1128: Declaration or statement expected.
+src/app/(main)/booking/payment/page.tsx(181,8): error TS1128: Declaration or statement expected.
+src/app/(main)/booking/payment/page.tsx(182,5): error TS1128: Declaration or statement expected.
+src/app/(main)/booking/payment/page.tsx(184,3): error TS1128: Declaration or statement expected.
+src/app/(main)/booking/payment/page.tsx(184,4): error TS1128: Declaration or statement expected.
+src/app/(main)/booking/payment/page.tsx(555,1): error TS1128: Declaration or statement expected.
