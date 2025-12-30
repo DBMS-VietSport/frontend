@@ -2,10 +2,9 @@
 
 import { ReactNode } from "react";
 import { useAuth } from "@/features/auth/lib/useAuth";
-import type { UserRole } from "@/features/auth/mock/authMock";
 
 interface RequireRoleProps {
-  roles: UserRole[];
+  roles: string[];
   children: ReactNode;
   fallback?: ReactNode;
 }

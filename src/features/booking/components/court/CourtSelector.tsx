@@ -3,14 +3,14 @@
 import * as React from "react";
 import { Card } from "@/ui/card";
 import { cn } from "@/utils";
-import { mockCourts } from "@/features/booking/mockData";
-import type { CustomerCourt as Court } from "@/types/customer-flow";
+import type { CustomerCourt as Court } from "@/types";
 
 interface CourtSelectorProps {
   courtTypeId: string;
   facilityId: string;
   selectedCourtId: string | null;
   onCourtSelect: (court: Court) => void;
+  courts: Court[];
 }
 
 export function CourtSelector({
@@ -18,15 +18,14 @@ export function CourtSelector({
   facilityId,
   selectedCourtId,
   onCourtSelect,
+  courts = [],
 }: CourtSelectorProps) {
   const filteredCourts = React.useMemo(() => {
     if (!courtTypeId) return [];
-    return mockCourts.filter(
-      (court: { type: string; facilityId: string }) =>
-        court.type === courtTypeId &&
-        (facilityId ? court.facilityId === facilityId : true)
-    );
-  }, [courtTypeId, facilityId]);
+    // The data coming from API might already be filtered by parent page
+    // but we can double check here
+    return courts;
+  }, [courtTypeId, facilityId, courts]);
 
   if (!courtTypeId) {
     return (

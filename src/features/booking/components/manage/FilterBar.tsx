@@ -21,8 +21,7 @@ import { Button } from "@/ui/button";
 import { CalendarIcon, Search, X } from "lucide-react";
 import { cn } from "@/utils";
 import { formatDate } from "@/features/booking/utils/pricing";
-import { mockCourtTypes } from "@/features/booking/mock/mockRepo";
-import type { PaymentStatusUI } from "@/types";
+import type { CustomerCourtType, PaymentStatusUI } from "@/types";
 
 export interface FilterValues {
   date: Date | null;
@@ -34,9 +33,10 @@ export interface FilterValues {
 interface FilterBarProps {
   filters: FilterValues;
   onFiltersChange: (filters: FilterValues) => void;
+  courtTypes?: CustomerCourtType[];
 }
 
-export function FilterBar({ filters, onFiltersChange }: FilterBarProps) {
+export function FilterBar({ filters, onFiltersChange, courtTypes = [] }: FilterBarProps) {
   const [searchInput, setSearchInput] = React.useState(filters.searchText);
 
   // Debounce search
@@ -141,7 +141,7 @@ export function FilterBar({ filters, onFiltersChange }: FilterBarProps) {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Tất cả loại sân</SelectItem>
-                {mockCourtTypes.map((type) => (
+                {courtTypes.map((type) => (
                   <SelectItem key={type.id} value={type.id.toString()}>
                     {type.name}
                   </SelectItem>

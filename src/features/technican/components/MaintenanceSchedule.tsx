@@ -113,7 +113,7 @@ export function MaintenanceSchedule() {
 
       <Card className="rounded-xl overflow-hidden">
         <div className="p-4 text-sm text-muted-foreground">
-          Lịch bảo trì được tạo bởi quản lý. Kỹ thuật viên chỉ được xem và cập
+          Lịch bảo trì được tạo bởi quản lý. Kỹ thuật chỉ được xem và cập
           nhật báo cáo sau khi bảo trì.
         </div>
         <div className="overflow-x-auto">

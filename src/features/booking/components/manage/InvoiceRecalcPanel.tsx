@@ -189,7 +189,9 @@ export function InvoiceRecalcPanel({
               disabled={
                 isSaving ||
                 bookingStatus === "Paid" ||
-                bookingStatus === "Cancelled"
+                bookingStatus === "Đã thanh toán" ||
+                bookingStatus === "Cancelled" ||
+                bookingStatus === "Đã hủy"
               }
             >
               Hủy phiếu đặt sân

@@ -6,7 +6,7 @@
  */
 
 import { QueryClient } from "@tanstack/react-query";
-import { ApiError, NetworkError } from "./client";
+import { ApiError } from "./client";
 
 /**
  * Default stale time for queries (5 minutes)
@@ -73,7 +73,8 @@ export function createQueryClient(): QueryClient {
       mutations: {
         // Retry mutations only once for network errors
         retry: (failureCount, error) => {
-          if (error instanceof NetworkError && failureCount < 1) {
+          // Only retry network errors (not API errors with status codes)
+          if (!(error instanceof ApiError) && failureCount < 1) {
             return true;
           }
           return false;

@@ -18,7 +18,6 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { toast } from "sonner";
 import { useAuth } from "@/features/auth/lib/useAuth";
-import { MOCK_USERS, ROLE_LABELS } from "@/features/auth/mock/authMock";
 
 const loginSchema = z.object({
   username: z.string().min(1, "Vui lòng nhập tên đăng nhập"),
@@ -44,28 +43,16 @@ export function LoginForm({
 
   const onSubmit = async (data: LoginFormData) => {
     try {
-      // Find user to check role before redirecting
-      const foundUser = MOCK_USERS.find(
-        (u) => u.username === data.username && u.password === data.password
-      );
-
-      if (!foundUser) {
-        throw new Error("Tên đăng nhập hoặc mật khẩu không đúng");
-      }
-
-      // Use the mock auth login
-      login(data.username, data.password);
+      // Use the real API login
+      await login(data.username, data.password);
 
       toast.success("Đăng nhập thành công!");
 
-      // Redirect based on user role
+      // Note: This might not be immediately available, so we'll redirect to a default page
+      // The AuthGuard will handle proper routing based on user role
+
       setTimeout(() => {
-        if (foundUser.role === "customer") {
-          router.push("/dashboard");
-        } else {
-          // For employees (admin, manager, receptionist, cashier, technical, trainer)
-          router.push("/my-schedule");
-        }
+        router.push("/dashboard");
       }, 500);
     } catch (error) {
       const message =
@@ -142,26 +129,6 @@ export function LoginForm({
             {isSubmitting ? "Đang xử lý..." : "Đăng nhập"}
           </Button>
         </Field>
-
-        {/* Test Accounts */}
-        <div className="rounded-lg border bg-muted/50 p-4">
-          <p className="text-xs font-semibold mb-2 text-muted-foreground">
-            Tài khoản test:
-          </p>
-          <div className="max-h-40 overflow-y-auto pr-2">
-            <div className="space-y-1 text-xs text-muted-foreground">
-              {MOCK_USERS.map((user) => (
-                <div key={user.username} className="flex justify-between">
-                  <span className="font-mono">{user.username}</span>
-                  <span className="text-xs">({ROLE_LABELS[user.role]})</span>
-                </div>
-              ))}
-            </div>
-          </div>
-          <p className="text-xs mt-2 text-muted-foreground">
-            Mật khẩu: <span className="font-mono">123456</span>
-          </p>
-        </div>
 
         <Field>
           <Button

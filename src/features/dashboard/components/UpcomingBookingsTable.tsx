@@ -1,7 +1,15 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/ui/card";
 import { Calendar, Clock, MapPin } from "lucide-react";
-import type { UpcomingBooking } from "@/features/customer/mock/customerDashboardRepo";
 import { StatusBadge } from "./StatusBadge";
+
+interface UpcomingBooking {
+  id: number;
+  branch: string;
+  courtName: string;
+  date: string;
+  timeRange: string;
+  status: string;
+}
 
 interface UpcomingBookingsTableProps {
   bookings: UpcomingBooking[];

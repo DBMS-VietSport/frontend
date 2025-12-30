@@ -24,13 +24,16 @@ import {
   SelectValue,
 } from "@/ui/select";
 import { cn } from "@/utils";
-import { generateTimeSlots } from "@/features/booking/mockData";
+import { generateRealTimeSlots } from "../../utils/slot-utils";
 import type { CustomerCourt as Court, CustomerCourtType as CourtType, TimeSlot } from "@/types/customer-flow";
 import { useAuth } from "@/features/auth/lib/useAuth";
+import { useCourtBookingSlots, useCalculatePrice } from "@/lib/api/use-bookings";
+import { format } from "date-fns";
 
 interface CourtTimeSlotGridProps {
   court: Court | null;
   courtType: CourtType | null;
+  branch: any | null;
   selectedDate: Date;
   selectedSlots?: TimeSlot[];
   onSlotSelect: (slot: TimeSlot) => void;
@@ -39,6 +42,7 @@ interface CourtTimeSlotGridProps {
 export function CourtTimeSlotGrid({
   court,
   courtType,
+  branch,
   selectedDate,
   selectedSlots = [],
   onSlotSelect,
@@ -51,14 +55,106 @@ export function CourtTimeSlotGrid({
     "all" | "available" | "booked" | "pending" | "past"
   >("all");
 
-  const timeSlots = React.useMemo(() => {
-    if (!courtType) return [];
-    const slots = generateTimeSlots(courtType, selectedDate);
-    if (status === "all") return slots;
-    return slots.filter((s: { status: string }) => s.status === status);
-  }, [courtType, selectedDate, status]);
+  // Debug logs
+  React.useEffect(() => {
+    console.log("CourtTimeSlotGrid Props:", { court, courtType, branch, selectedDate });
+  }, [court, courtType, branch, selectedDate]);
 
-  if (!court || !courtType) {
+  // Fetch booked slots from API
+  const { data: bookedSlots = [], isLoading: isLoadingBooked } = useCourtBookingSlots(
+    court ? parseInt(court.id) : 0,
+    format(selectedDate, "yyyy-MM-dd")
+  );
+
+  // Price calculation mutation
+  const calculatePriceMutation = useCalculatePrice();
+  const [prices, setPrices] = React.useState<any[]>([]);
+
+  const timeSlots = React.useMemo(() => {
+    if (!court || !courtType || !branch) return [];
+
+    const open_time = branch.open_time || branch.openTime || "06:00:00";
+    const close_time = branch.close_time || branch.closeTime || "22:00:00";
+    const duration = (courtType as any).slotDuration || (courtType as any).rent_duration || 60;
+
+    console.log("Generating slots with:", { open_time, close_time, duration, selectedDate, bookedSlotsCount: bookedSlots.length });
+
+    try {
+      const generatedSlots = generateRealTimeSlots({
+        openTime: open_time,
+        closeTime: close_time,
+        slotDuration: duration,
+        selectedDate,
+        bookedSlots,
+      });
+      console.log(`Generated ${generatedSlots.length} slots for ${format(selectedDate, "yyyy-MM-dd")}`);
+
+      // Merge with prices if available
+      const slotsWithPrice = generatedSlots.map(slot => {
+        const priceData = prices.find(p => {
+          // Robustly get HH:mm from p.start_time
+          let pTime = "";
+          if (typeof p.start_time === "string") {
+            if (p.start_time.includes("T")) {
+              pTime = p.start_time.split("T")[1].substring(0, 5);
+            } else {
+              pTime = p.start_time.substring(0, 5);
+            }
+          }
+          return pTime === slot.start;
+        });
+
+        return {
+          ...slot,
+          price: priceData?.total_price || court.baseHourlyPrice,
+        };
+      });
+
+      if (status === "all") return slotsWithPrice;
+      return slotsWithPrice.filter((s) => s.status === status);
+    } catch (err) {
+      console.error("Error generating slots:", err);
+      return [];
+    }
+  }, [court, courtType, branch, selectedDate, bookedSlots, prices, status]);
+
+  // Fetch prices once slots are generated
+  React.useEffect(() => {
+    // Clear old prices when inputs change
+    setPrices([]);
+    // Optionally reset status to all
+    setStatus("all");
+
+    if (court && courtType && branch && selectedDate && !isLoadingBooked) {
+      const open_time = branch.open_time || branch.openTime || "06:00:00";
+      const close_time = branch.close_time || branch.closeTime || "22:00:00";
+      const duration = (courtType as any).slotDuration || (courtType as any).rent_duration || 60;
+
+      const basicSlots = generateRealTimeSlots({
+        openTime: open_time,
+        closeTime: close_time,
+        slotDuration: duration,
+        selectedDate,
+        bookedSlots: [],
+      }).map(s => ({
+        start_time: s.start, // Send only HH:mm as requested
+        end_time: s.end,     // Send only HH:mm as requested
+      }));
+
+      calculatePriceMutation.mutate({
+        courtId: parseInt(court.id),
+        date: format(selectedDate, "yyyy-MM-dd"),
+        slots: basicSlots,
+      }, {
+        onSuccess: (data) => {
+          console.log("Calculated Prices API response:", data);
+          setPrices(data);
+        },
+      });
+    }
+  }, [court?.id, format(selectedDate, "yyyy-MM-dd"), branch?.id, courtType?.id, isLoadingBooked]);
+
+  if (!court || !courtType || !branch) {
     return (
       <div className="text-center py-12 text-muted-foreground">
         Vui lòng chọn sân để xem lịch trống
@@ -105,8 +201,8 @@ export function CourtTimeSlotGrid({
           "h-auto py-3 px-4 flex flex-col items-center justify-center gap-1 transition-all duration-200",
           getSlotClassName(slot.status),
           isSelected &&
-            slot.status === "available" &&
-            "bg-green-50 border-green-500 "
+          slot.status === "available" &&
+          "bg-green-50 border-green-500 "
         )}
         onClick={() => handleSlotClick(slot)}
         disabled={slot.status === "past"}
@@ -114,11 +210,14 @@ export function CourtTimeSlotGrid({
         <span className="font-semibold text-sm">
           {slot.start} - {slot.end}
         </span>
-        <span className="text-xs">
+        <span className="text-xs font-medium">
+          {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(slot.price || 0)}
+        </span>
+        <span className="text-[10px] uppercase tracking-wider opacity-70">
           {slot.status === "available" && isSelected && "Đã chọn"}
           {slot.status === "available" && !isSelected && "Trống"}
           {slot.status === "booked" && "Đã đặt"}
-          {slot.status === "pending" && "Chờ xác nhận"}
+          {slot.status === "pending" && "Chờ"}
           {slot.status === "past" && "Đã qua"}
         </span>
       </Button>

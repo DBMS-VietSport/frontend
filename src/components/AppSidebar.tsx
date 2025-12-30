@@ -32,7 +32,7 @@ import { Button } from "@/ui/button";
 import { ScrollArea } from "@/ui/scroll-area";
 import { RequireRole } from "@/features/auth/components/RequireRole";
 import { useAuth } from "@/features/auth/lib/useAuth";
-import { ROLE_LABELS } from "@/features/auth/mock/authMock";
+import { ROLE_LABELS } from "@/lib/role-labels";
 import { toast } from "sonner";
 
 interface NavItem {
@@ -57,12 +57,12 @@ const navigationGroups: NavGroup[] = [
         href: "/my-schedule",
         icon: CalendarClock,
         roles: [
-          "admin",
-          "manager",
-          "receptionist",
-          "cashier",
-          "technical",
-          "trainer",
+          "Quản trị hệ thống",
+          "Quản lý",
+          "Lễ tân",
+          "Thu ngân",
+          "Kỹ thuật",
+          "Huấn luyện viên",
         ],
       },
       {
@@ -70,19 +70,19 @@ const navigationGroups: NavGroup[] = [
         href: "/my-payroll",
         icon: Wallet,
         roles: [
-          "admin",
-          "manager",
-          "receptionist",
-          "cashier",
-          "technical",
-          "trainer",
+          "Quản trị hệ thống",
+          "Quản lý",
+          "Lễ tân",
+          "Thu ngân",
+          "Kỹ thuật",
+          "Huấn luyện viên",
         ],
       },
       {
         title: "Dashboard",
         href: "/dashboard",
         icon: LayoutDashboard,
-        roles: ["customer"],
+        roles: ["Khách hàng/Member"],
       },
     ],
   },
@@ -93,49 +93,49 @@ const navigationGroups: NavGroup[] = [
         title: "Đặt sân",
         href: "/booking/court",
         icon: CalendarCheck,
-        roles: ["customer"],
+        roles: ["Khách hàng/Member"],
       },
       {
         title: "Lập phiếu đặt sân",
         href: "/booking/court",
         icon: CalendarCheck,
-        roles: ["receptionist"],
+        roles: ["Lễ tân"],
       },
       {
         title: "Đặt dịch vụ kèm theo",
         href: "/booking/services",
         icon: Package,
-        roles: ["customer"],
+        roles: ["Khách hàng/Member"],
       },
       {
         title: "Lập phiếu dịch vụ",
         href: "/booking/services",
         icon: Package,
-        roles: ["receptionist"],
+        roles: ["Lễ tân"],
       },
       {
         title: "Thanh toán",
         href: "/booking/payment",
         icon: Receipt,
-        roles: ["customer", "receptionist", "cashier"],
+        roles: ["Khách hàng/Member", "Thu ngân"],
       },
       {
         title: "Quản lý đặt sân",
         href: "/booking/manage",
         icon: CalendarClock,
-        roles: ["manager", "receptionist"],
+        roles: ["Quản lý", "Lễ tân"],
       },
       {
         title: "Lịch sử đặt sân",
         href: "/booking/manage",
         icon: CalendarClock,
-        roles: ["customer"],
+        roles: ["Khách hàng/Member"],
       },
       {
         title: "Quản lý khách hàng",
         href: "/customers",
         icon: Users,
-        roles: ["manager"],
+        roles: ["Quản lý"],
       },
     ],
   },
@@ -146,13 +146,13 @@ const navigationGroups: NavGroup[] = [
         title: "Tạo hóa đơn",
         href: "/invoices/create",
         icon: Receipt,
-        roles: ["manager", "cashier"],
+        roles: ["Quản lý", "Thu ngân"],
       },
       {
         title: "Quản lý hóa đơn",
         href: "/invoices/manage",
         icon: FileText,
-        roles: ["manager", "cashier"],
+        roles: ["Quản lý", "Thu ngân"],
       },
     ],
   },
@@ -163,25 +163,25 @@ const navigationGroups: NavGroup[] = [
         title: "Quản lý nhân viên",
         href: "/employees",
         icon: UserCog,
-        roles: ["manager", "admin"],
+        roles: ["Quản lý", "Quản trị hệ thống"],
       },
       {
         title: "Quản lý sân bãi",
         href: "/courts",
         icon: Building2,
-        roles: ["manager", "technical"],
+        roles: ["Quản lý", "Kỹ thuật"],
       },
       {
         title: "Quản lý dịch vụ",
         href: "/services",
         icon: Package,
-        roles: ["manager"],
+        roles: ["Quản lý"],
       },
       {
         title: "Cấu hình hệ thống",
         href: "/settings",
         icon: Settings,
-        roles: ["manager", "admin"],
+        roles: ["Quản lý", "Quản trị hệ thống"],
       },
     ],
   },
@@ -192,13 +192,13 @@ const navigationGroups: NavGroup[] = [
         title: "Lịch bảo trì",
         href: "/technician/schedule",
         icon: CalendarCheck,
-        roles: ["technical", "manager"],
+        roles: ["Kỹ thuật", "Quản lý"],
       },
       {
         title: "Báo cáo bảo trì",
         href: "/technician/reports",
         icon: ClipboardList,
-        roles: ["technical", "manager"],
+        roles: ["Kỹ thuật", "Quản lý"],
       },
     ],
   },
@@ -209,7 +209,7 @@ const navigationGroups: NavGroup[] = [
         title: "Lịch huấn luyện",
         href: "/trainer",
         icon: UserRound,
-        roles: ["trainer"],
+        roles: ["Huấn luyện viên"],
       },
     ],
   },
@@ -220,13 +220,13 @@ const navigationGroups: NavGroup[] = [
         title: "Phân ca",
         href: "/shifts/assign",
         icon: Clock,
-        roles: ["manager", "admin"],
+        roles: ["Quản lý", "Quản trị hệ thống"],
       },
       {
         title: "Cài đặt ca",
         href: "/shifts/settings",
         icon: Wrench,
-        roles: ["manager", "admin"],
+        roles: ["Quản lý", "Quản trị hệ thống"],
       },
     ],
   },
@@ -237,25 +237,25 @@ const navigationGroups: NavGroup[] = [
         title: "Báo cáo doanh thu",
         href: "/reports/revenue",
         icon: TrendingUp,
-        roles: ["manager", "admin"],
+        roles: ["Quản lý", "Quản trị hệ thống"],
       },
       {
         title: "Báo cáo sử dụng sân",
         href: "/reports/courts",
         icon: Activity,
-        roles: ["manager", "admin"],
+        roles: ["Quản lý", "Quản trị hệ thống"],
       },
       {
         title: "Báo cáo khách hàng",
         href: "/reports/customers",
         icon: Users,
-        roles: ["manager", "admin"],
+        roles: ["Quản lý", "Quản trị hệ thống"],
       },
       {
         title: "Báo cáo nhân viên",
         href: "/reports/employee",
         icon: BarChart3,
-        roles: ["manager", "admin"],
+        roles: ["Quản lý", "Quản trị hệ thống"],
       },
     ],
   },
@@ -266,7 +266,7 @@ const navigationGroups: NavGroup[] = [
         title: "Cấu hình tham số chi nhánh",
         href: "/settings",
         icon: Settings,
-        roles: ["manager", "admin"],
+        roles: ["Quản lý", "Quản trị hệ thống"],
       },
     ],
   },
@@ -356,7 +356,7 @@ export default function AppSidebar() {
                               ? "px-2 justify-center"
                               : "px-3 justify-start",
                             active &&
-                              "bg-primary/10 text-primary hover:bg-primary/15"
+                            "bg-primary/10 text-primary hover:bg-primary/15"
                           )}
                           title={isCollapsed ? item.title : undefined}
                         >
@@ -403,9 +403,9 @@ export default function AppSidebar() {
                 <p className="text-xs text-muted-foreground">
                   {ROLE_LABELS[user.role]}
                 </p>
-                {user.branch && (
+                {user.branchName && (
                   <p className="text-xs text-muted-foreground">
-                    Chi nhánh: {user.branch}
+                    Chi nhánh: {user.branchName}
                   </p>
                 )}
               </div>

@@ -19,6 +19,12 @@ import {
   PopoverTrigger,
 } from "@/ui/popover";
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/ui/tooltip";
+import {
   Plus,
   X,
   AlertCircle,
@@ -29,12 +35,11 @@ import {
 import { cn } from "@/utils";
 import { format } from "date-fns";
 import { vi } from "date-fns/locale";
-import type { BookingSlot } from "@/types";
+import type { BookingSlot, TimeSlot } from "@/types";
 import { formatTime } from "@/features/booking/utils/pricing";
 
 import {
   useCourtTimeEditor,
-  type TimeSlot,
   type TimeSlotEdit,
 } from "./useCourtTimeEditor";
 
@@ -46,6 +51,14 @@ interface CourtTimeEditorProps {
   bookingId: number;
   initialCourtId: number;
   initialSlots: BookingSlot[];
+  branchId: number;
+  initialCourtDetails?: {
+    id: number;
+    name: string;
+    branch?: { name: string };
+    court_type?: { name: string };
+    base_hourly_price?: number;
+  };
   onChange: (courtId: number, slots: TimeSlotEdit[]) => void;
 }
 
@@ -57,6 +70,8 @@ export function CourtTimeEditor({
   bookingId,
   initialCourtId,
   initialSlots,
+  branchId,
+  initialCourtDetails,
   onChange,
 }: CourtTimeEditorProps) {
   const {
@@ -85,6 +100,8 @@ export function CourtTimeEditor({
     bookingId,
     initialCourtId,
     initialSlots,
+    branchId,
+    initialCourt: initialCourtDetails,
     onChange,
   });
 
@@ -211,7 +228,9 @@ function ViewMode({ slots, onAddTime, onChangeCourt }: ViewModeProps) {
           </p>
         ) : (
           slots.map((slot, index) => {
-            const slotDate = new Date(slot.start_time);
+            // Check formatted string validity
+            const d = new Date(slot.start_time);
+            const isValidDate = !isNaN(d.getTime());
             return (
               <Card key={index} className="p-4">
                 <div className="flex items-center justify-between">
@@ -219,7 +238,7 @@ function ViewMode({ slots, onAddTime, onChangeCourt }: ViewModeProps) {
                     <div className="flex items-center gap-2">
                       <CalendarIcon className="h-4 w-4 text-muted-foreground" />
                       <span className="text-sm font-medium">
-                        {format(slotDate, "dd/MM/yyyy", { locale: vi })}
+                        {isValidDate ? format(d, "dd/MM/yyyy") : "Invalid Date"}
                       </span>
                     </div>
                     <div className="flex items-center gap-2">
@@ -279,11 +298,11 @@ function EditMode({
   onRemoveSlot,
 }: EditModeProps) {
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-lg font-semibold">
+          <h3 className="text-xl font-bold">
             {mode === "addTime" && "Thêm khung giờ"}
             {mode === "changeCourt" && "Đổi sân / khung giờ"}
           </h3>
@@ -299,42 +318,50 @@ function EditMode({
         </Button>
       </div>
 
-      {/* Court Selector (changeCourt mode only) */}
-      {mode === "changeCourt" && (
-        <CourtSelector
-          courtId={courtId}
-          tempCourtId={tempCourtId}
-          availableCourts={availableCourts}
-          onChange={onCourtChange}
-        />
-      )}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {/* Left Col: Controls */}
+        <div className="space-y-6 md:col-span-1">
+          {/* Court Selector (changeCourt mode only) */}
+          {mode === "changeCourt" && (
+            <CourtSelector
+              courtId={courtId}
+              tempCourtId={tempCourtId}
+              availableCourts={availableCourts}
+              onChange={onCourtChange}
+            />
+          )}
 
-      {/* Date Selector */}
-      <DateSelector selectedDate={selectedDate} onSelect={onDateSelect} />
+          {/* Date Selector */}
+          <DateSelector selectedDate={selectedDate} onSelect={onDateSelect} />
 
-      {/* Time Slot Grid */}
-      <TimeSlotGrid
-        timeSlots={timeSlots}
-        isSlotSelected={isSlotSelected}
-        onSlotSelect={onSlotSelect}
-      />
+          {/* Selected Slots Summary */}
+          {tempSelectedSlots.length > 0 && (
+            <SelectedSlotsSummary
+              slots={tempSelectedSlots}
+              onConfirm={onConfirm}
+              onRemove={onRemoveSlot}
+            />
+          )}
+        </div>
 
-      {/* Selected Slots Summary */}
-      {tempSelectedSlots.length > 0 && (
-        <SelectedSlotsSummary
-          slots={tempSelectedSlots}
-          onConfirm={onConfirm}
-          onRemove={onRemoveSlot}
-        />
-      )}
+        {/* Right Col: Grid */}
+        <div className="md:col-span-2">
+          {/* Time Slot Grid */}
+          <TimeSlotGrid
+            timeSlots={timeSlots}
+            isSlotSelected={isSlotSelected}
+            onSlotSelect={onSlotSelect}
+          />
 
-      {/* Error */}
-      {conflictError && (
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>{conflictError}</AlertDescription>
-        </Alert>
-      )}
+          {/* Error */}
+          {conflictError && (
+            <Alert variant="destructive" className="mt-4">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>{conflictError}</AlertDescription>
+            </Alert>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
@@ -358,7 +385,7 @@ function CourtSelector({ courtId, tempCourtId, availableCourts, onChange }: Cour
         value={tempCourtId?.toString() || courtId.toString()}
         onValueChange={onChange}
       >
-        <SelectTrigger>
+        <SelectTrigger className="h-10 text-base">
           <SelectValue placeholder="Chọn sân" />
         </SelectTrigger>
         <SelectContent>
@@ -397,7 +424,7 @@ function DateSelector({ selectedDate, onSelect }: DateSelectorProps) {
           <Button
             variant="outline"
             className={cn(
-              "w-full justify-start text-left font-normal",
+              "w-full justify-start text-left font-normal h-10 text-base",
               !selectedDate && "text-muted-foreground"
             )}
           >
@@ -433,41 +460,41 @@ interface TimeSlotGridProps {
 function TimeSlotGrid({ timeSlots, isSlotSelected, onSlotSelect }: TimeSlotGridProps) {
   if (timeSlots.length === 0) {
     return (
-      <Card className="p-6">
-        <div className="text-center py-8 text-muted-foreground">
-          <Clock className="h-12 w-12 mx-auto mb-4 opacity-50" />
-          <p className="text-sm">Không có khung giờ nào</p>
+      <Card className="p-8">
+        <div className="text-center py-12 text-muted-foreground">
+          <Clock className="h-16 w-16 mx-auto mb-4 opacity-50" />
+          <p className="text-lg">Không có khung giờ nào</p>
         </div>
       </Card>
     );
   }
 
   return (
-    <Card className="p-6">
-      <div className="space-y-4">
+    <Card className="p-6 h-full">
+      <div className="space-y-6">
         {/* Legend */}
-        <div className="flex items-center justify-between text-sm">
-          <span className="text-muted-foreground">
+        <div className="flex flex-wrap items-center justify-between text-sm gap-4">
+          <span className="text-muted-foreground font-medium">
             Chọn các khung giờ trống (màu trắng)
           </span>
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
-              <div className="w-4 h-4 bg-white border-2 border-gray-300 rounded" />
-              <span className="text-xs">Trống</span>
+              <div className="w-5 h-5 bg-white border-2 border-gray-300 rounded" />
+              <span className="text-sm">Trống</span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="w-4 h-4 bg-green-50 border-2 border-green-500 rounded ring-2 ring-green-500 ring-offset-1" />
-              <span className="text-xs">Đã chọn</span>
+              <div className="w-5 h-5 bg-green-50 border-2 border-green-500 rounded ring-2 ring-green-500 ring-offset-1" />
+              <span className="text-sm">Đã chọn</span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="w-4 h-4 bg-red-100 border-2 border-red-300 rounded" />
-              <span className="text-xs">Đã đặt</span>
+              <div className="w-5 h-5 bg-red-100 border-2 border-red-300 rounded" />
+              <span className="text-sm">Đã đặt</span>
             </div>
           </div>
         </div>
 
-        {/* Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3">
+        {/* Grid - Bigger Columns */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
           {timeSlots.map((slot, index) => (
             <SlotButton
               key={index}
@@ -494,48 +521,94 @@ interface SlotButtonProps {
 
 function SlotButton({ slot, isSelected, onClick }: SlotButtonProps) {
   const getClassName = () => {
-    switch (slot.status) {
-      case "available":
-        return cn(
-          "bg-white hover:bg-green-50 border-gray-300 hover:border-green-500 text-gray-900",
-          isSelected && "bg-green-50 border-green-500 ring-2 ring-green-500 ring-offset-1"
-        );
-      case "booked":
-        return "bg-red-100 border-red-300 text-red-900 cursor-not-allowed";
-      case "pending":
-        return "bg-yellow-100 border-yellow-300 text-yellow-900 cursor-not-allowed";
-      case "past":
-        return "bg-gray-100 border-gray-200 text-gray-400 cursor-not-allowed opacity-50";
-      default:
-        return "";
+    // Handle mapped statuses including standard and Vietnamese ones
+    if (slot.status === "available" || slot.status === "Trống") {
+      return cn(
+        "bg-white hover:bg-green-50 border-gray-200 hover:border-green-500 text-gray-900 shadow-sm hover:shadow-md hover:-translate-y-0.5",
+        isSelected && "bg-green-50 border-green-500 ring-2 ring-green-500 ring-offset-1 shadow-md"
+      );
     }
+    if (slot.status === "pending" || slot.status === "Đang giữ chỗ") {
+      return "bg-yellow-100 border-yellow-300 text-yellow-900 cursor-not-allowed opacity-80";
+    }
+    if (slot.status === "past") {
+      return "bg-gray-50 border-gray-200 text-gray-400 cursor-not-allowed opacity-60";
+    }
+    // All other statuses are booked/unavailable
+    return "bg-red-50 border-red-200 text-red-900 cursor-not-allowed opacity-80";
   };
 
   const getStatusLabel = () => {
-    if (slot.status === "available" && isSelected) return "Đã chọn";
-    if (slot.status === "available") return "Trống";
-    if (slot.status === "booked") return "Đã đặt";
-    if (slot.status === "pending") return "Chờ xác nhận";
-    if (slot.status === "past") return "Đã qua";
-    return "";
+    const s = slot.status;
+    if ((s === "available" || s === "Trống") && isSelected) return "Đã chọn";
+    if (s === "available" || s === "Trống") return "Trống";
+    if (s === "booked" || s === "Đã đặt") return "Đã đặt";
+    if (s === "pending" || s === "Đang giữ chỗ") return "Chờ";
+    if (s === "past") return "Đã qua";
+    return s;
   };
 
-  return (
+  const button = (
     <Button
       variant="outline"
       className={cn(
-        "h-auto py-3 px-4 flex flex-col items-center justify-center gap-1 transition-all duration-200",
+        "h-20 py-2 px-3 flex flex-col items-center justify-center gap-1 transition-all duration-200 w-full",
         getClassName()
       )}
       onClick={onClick}
-      disabled={slot.status === "past" || slot.status === "booked"}
+      disabled={slot.status !== "available" && slot.status !== "Trống"}
     >
-      <span className="font-semibold text-sm">
-        {slot.start} - {slot.end}
+      <span className="font-bold text-lg text-foreground/90">
+        {slot.start}
+        <span className="text-xs font-normal text-muted-foreground ml-1">- {slot.end}</span>
       </span>
-      <span className="text-xs">{getStatusLabel()}</span>
+      <span className="text-sm font-semibold text-primary">
+        {slot.price ? new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(slot.price) : '-'}
+      </span>
+      <span className="text-[10px] uppercase tracking-wider opacity-70">
+        {getStatusLabel()}
+      </span>
     </Button>
   );
+
+  // Add tooltip if booked and info available
+  if ((slot.status === "booked" || slot.status === "Đã đặt") && (slot.bookedBy || slot.phone)) {
+    return (
+      <TooltipProvider delayDuration={200}>
+        <Tooltip>
+          <TooltipTrigger asChild>{button}</TooltipTrigger>
+          <TooltipContent className="p-3">
+            <div className="space-y-1 text-sm">
+              <p className="font-semibold text-base mb-1">Đã đặt bởi:</p>
+              {slot.bookedBy && <p><span className="text-muted-foreground">Tên:</span> {slot.bookedBy}</p>}
+              {slot.phone && <p><span className="text-muted-foreground">SĐT:</span> {slot.phone}</p>}
+            </div>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    );
+  }
+
+  // Tooltip for past slots
+  if (slot.status === "past") {
+    return (
+      <TooltipProvider delayDuration={200}>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <div className="w-full relative cursor-not-allowed">
+              {/* Overlay to ensure tooltip triggers even if button disabled (though disabled buttons usually swallow events in React, trigger wrapper handles it) */}
+              {button}
+            </div>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Khung giờ đã qua</p>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    )
+  }
+
+  return button;
 }
 
 // -----------------------------------------------------------------------------
@@ -550,39 +623,60 @@ interface SelectedSlotsSummaryProps {
 
 function SelectedSlotsSummary({ slots, onConfirm, onRemove }: SelectedSlotsSummaryProps) {
   return (
-    <Card className="p-4 bg-green-50 border-green-200">
-      <div className="space-y-3">
-        <div className="flex items-center justify-between">
-          <p className="text-sm font-medium text-green-900">
-            Đã chọn {slots.length} khung giờ
+    <Card className="p-4 bg-green-50 border-green-200 shadow-sm sticky top-4">
+      <div className="space-y-4">
+        <div className="flex items-center justify-between border-b border-green-200 pb-3">
+          <p className="font-semibold text-green-900">
+            Đã chọn <span className="text-lg">{slots.length}</span> khung giờ
           </p>
-          <Button onClick={onConfirm} size="sm">
-            Xác nhận
-          </Button>
         </div>
-        <div className="space-y-1 max-h-32 overflow-y-auto">
+
+        <div className="space-y-2 max-h-[300px] overflow-y-auto pr-1 custom-scrollbar">
           {slots.map((s, idx) => {
             const slotDate = s.startISO ? new Date(s.startISO) : null;
             return (
               <div
                 key={idx}
-                className="flex items-center justify-between text-xs text-green-700"
+                className="flex items-center justify-between p-2 bg-white rounded border border-green-100 shadow-sm"
               >
-                <span>
-                  {slotDate ? format(slotDate, "dd/MM/yyyy", { locale: vi }) : ""}{" "}
-                  {s.start} - {s.end}
-                </span>
+                <div className="flex flex-col">
+                  <span className="text-xs text-muted-foreground font-medium">
+                    {slotDate ? format(slotDate, "dd/MM/yyyy", { locale: vi }) : ""}
+                  </span>
+                  <span className="text-sm font-bold text-green-700">
+                    {s.start} - {s.end}
+                  </span>
+                  {s.price && (
+                    <span className="text-xs text-green-600">
+                      {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(s.price)}
+                    </span>
+                  )}
+                </div>
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-5 w-5"
+                  className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-50"
                   onClick={() => onRemove(s)}
                 >
-                  <X className="h-3 w-3" />
+                  <X className="h-4 w-4" />
                 </Button>
               </div>
             );
           })}
+        </div>
+
+        <div className="pt-2 border-t border-green-200">
+          <div className="flex justify-between items-center mb-4">
+            <span className="text-sm font-medium text-green-800">Tạm tính:</span>
+            <span className="text-lg font-bold text-green-800">
+              {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(
+                slots.reduce((sum, s) => sum + (s.price || 0), 0)
+              )}
+            </span>
+          </div>
+          <Button onClick={onConfirm} className="w-full bg-green-600 hover:bg-green-700 text-white shadow-md transition-all hover:-translate-y-0.5">
+            Xác nhận thay đổi
+          </Button>
         </div>
       </div>
     </Card>

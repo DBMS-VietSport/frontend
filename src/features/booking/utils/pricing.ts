@@ -122,11 +122,12 @@ export function formatDate(date: Date | string): string {
  * Format time from ISO string
  */
 export function formatTime(isoString: string): string {
-  const date = new Date(isoString);
-  return date.toLocaleTimeString("vi-VN", {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+  if (!isoString) return "";
+  // Return literal time part "HH:mm" from "YYYY-MM-DDTHH:mm:ss..."
+  // This ignores timezone ("Z") and local conversion.
+  const parts = isoString.split("T");
+  if (parts.length < 2) return "";
+  return parts[1].slice(0, 5);
 }
 
 /**

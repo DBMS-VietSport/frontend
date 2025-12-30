@@ -37,7 +37,8 @@ export interface BookingRow {
   timeRange: string;
   paymentStatus: PaymentStatusUI;
   courtStatus: BookingStatus;
-  createdAt: string;
+  bookingDate: string; // Date when they want to play
+  createdAt: string; // Date when booking was created
 }
 
 /** Extended service booking item with related entities */

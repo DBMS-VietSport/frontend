@@ -13,7 +13,7 @@ export interface CourtBookingData {
   facilityId: string;
   facilityName: string;
   date: Date;
-  timeSlots: Array<{ start: string; end: string }>;
+  timeSlots: Array<{ start: string; end: string; price?: number }>;
   pricePerHour: number;
   totalCourtFee: number;
   status: "held" | "pending" | "confirmed" | "paid";

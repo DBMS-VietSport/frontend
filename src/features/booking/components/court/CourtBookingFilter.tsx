@@ -18,11 +18,11 @@ import {
   PopoverTrigger,
 } from "@/ui/popover";
 import { CalendarIcon } from "lucide-react";
+import { useAuth } from "@/features/auth/lib/useAuth";
+import { isCustomer, ROLES } from "@/lib/role-labels";
 import { format } from "date-fns";
 import { vi } from "date-fns/locale";
 import { cn } from "@/utils";
-import { mockCities, mockFacilities, mockCustomerCourtTypes as mockCourtTypes } from "@/features/booking/mockData";
-import { useAuth } from "@/features/auth/lib/useAuth";
 import { CustomerSelector, type Customer } from "../shared/CustomerSelector";
 
 interface CourtBookingFilterProps {
@@ -32,55 +32,87 @@ interface CourtBookingFilterProps {
     courtTypeId: string;
     date: Date;
   }) => void;
+  // Data props
+  cities?: any[];
+  branches?: any[];
+  courtTypes?: any[];
   // Customer selection props (for receptionist)
   selectedCustomerId?: string | null;
   onCustomerChange?: (customerId: string | null) => void;
   customers?: Customer[];
+  selectedFilters?: {
+    cityId: string;
+    facilityId: string;
+    courtTypeId: string;
+    date: Date;
+  };
 }
 
 export function CourtBookingFilter({
   onFilterChange,
+  cities = [],
+  branches = [],
+  courtTypes = [],
   selectedCustomerId,
   onCustomerChange,
   customers = [],
+  selectedFilters,
 }: CourtBookingFilterProps) {
   const { user } = useAuth();
-  const isCustomer = user?.role === "customer";
-  const isReceptionist = user?.role === "receptionist";
-  const [date, setDate] = React.useState<Date>(new Date());
-  const [cityId, setCityId] = React.useState<string>("");
-  const [facilityId, setFacilityId] = React.useState<string>("");
-  const [courtTypeId, setCourtTypeId] = React.useState<string>("");
+  const isCustomerUser = isCustomer(user);
+  const isReceptionist = user?.role === ROLES.RECEPTIONIST || user?.role?.toLowerCase() === "receptionist";
+  // Use props as source of truth with fallbacks
+  const currentFilters = selectedFilters || {
+    cityId: "",
+    facilityId: user?.branchId?.toString() || "",
+    courtTypeId: "",
+    date: new Date(),
+  };
 
-  const filteredFacilities = React.useMemo(() => {
-    if (!cityId) return mockFacilities;
-    return mockFacilities.filter((f: { cityId: string }) => f.cityId === cityId);
-  }, [cityId]);
+  const { cityId, facilityId, courtTypeId, date } = currentFilters;
 
-  // Handlers with cascading reset
-  const handleCityChange = React.useCallback((value: string) => {
-    setCityId(value);
-    setFacilityId("");
-    setCourtTypeId("");
-  }, []);
+  const filteredBranches = React.useMemo(() => {
+    if (!cityId) return branches;
+    return branches;
+  }, [cityId, branches]);
 
-  const handleFacilityChange = React.useCallback((value: string) => {
-    setFacilityId(value);
-    setCourtTypeId("");
-  }, []);
-
-  React.useEffect(() => {
+  // Handlers that call parent with full filter object
+  const handleCityChange = (value: string) => {
     onFilterChange({
-      cityId,
-      facilityId,
-      courtTypeId,
-      date,
+      ...currentFilters,
+      cityId: value,
+      facilityId: "",
+      courtTypeId: "",
     });
-  }, [cityId, facilityId, courtTypeId, date, onFilterChange]);
+  };
+
+  const handleFacilityChange = (value: string) => {
+    onFilterChange({
+      ...currentFilters,
+      facilityId: value,
+      courtTypeId: "",
+    });
+  };
+
+  const handleDateChange = (newDate: Date | undefined) => {
+    if (newDate) {
+      onFilterChange({
+        ...currentFilters,
+        date: newDate,
+      });
+    }
+  };
+
+  const handleCourtTypeChange = (value: string) => {
+    onFilterChange({
+      ...currentFilters,
+      courtTypeId: value,
+    });
+  };
 
   // Calculate grid columns based on role
   const gridCols = React.useMemo(() => {
-    if (isCustomer) {
+    if (isCustomerUser) {
       // Customer: Tỉnh thành, Cơ sở, Ngày đặt, Loại sân = 4 columns
       return "grid-cols-1 md:grid-cols-2 lg:grid-cols-4";
     } else if (isReceptionist) {
@@ -90,7 +122,7 @@ export function CourtBookingFilter({
       // Other roles: Cơ sở mặc định, Ngày đặt, Loại sân = 3 columns
       return "grid-cols-1 md:grid-cols-2 lg:grid-cols-3";
     }
-  }, [isCustomer, isReceptionist]);
+  }, [isCustomerUser, isReceptionist]);
 
   return (
     <Card className="p-6 rounded-2xl">
@@ -101,7 +133,7 @@ export function CourtBookingFilter({
           </div>
           <div className={cn("grid gap-4", gridCols)}>
             {/* 1. Cơ sở */}
-            {isCustomer ? (
+            {isCustomerUser ? (
               <>
                 {/* City */}
                 <div className="space-y-2">
@@ -111,11 +143,15 @@ export function CourtBookingFilter({
                       <SelectValue placeholder="Chọn tỉnh thành" />
                     </SelectTrigger>
                     <SelectContent>
-                      {mockCities.map((city: { id: string; name: string }) => (
-                        <SelectItem key={city.id} value={city.id}>
-                          {city.name}
-                        </SelectItem>
-                      ))}
+                      {cities.length > 0 ? (
+                        cities.map((city: any) => (
+                          <SelectItem key={city.id} value={city.id.toString()}>
+                            {city.name}
+                          </SelectItem>
+                        ))
+                      ) : (
+                        <SelectItem value="none" disabled>Hệ thống - Miền Nam</SelectItem>
+                      )}
                     </SelectContent>
                   </Select>
                 </div>
@@ -126,15 +162,14 @@ export function CourtBookingFilter({
                   <Select
                     value={facilityId}
                     onValueChange={handleFacilityChange}
-                    disabled={!cityId}
                   >
                     <SelectTrigger id="facility">
                       <SelectValue placeholder="Chọn cơ sở" />
                     </SelectTrigger>
                     <SelectContent>
-                      {filteredFacilities.map((facility: { id: string; name: string }) => (
-                        <SelectItem key={facility.id} value={facility.id}>
-                          {facility.name}
+                      {filteredBranches.map((branch: any) => (
+                        <SelectItem key={branch.id} value={branch.id.toString()}>
+                          {branch.name}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -148,7 +183,7 @@ export function CourtBookingFilter({
                   aria-disabled
                   className="rounded-md border px-3 py-2 text-sm bg-muted text-muted-foreground opacity-60 cursor-not-allowed select-none"
                 >
-                  {user?.branch ?? "N/A"}
+                  {user?.branchName || branches.find(b => b.id.toString() === facilityId)?.name || "N/A"}
                 </div>
               </div>
             )}
@@ -189,7 +224,7 @@ export function CourtBookingFilter({
                   <Calendar
                     mode="single"
                     selected={date}
-                    onSelect={(newDate) => newDate && setDate(newDate)}
+                    onSelect={handleDateChange}
                     initialFocus
                   />
                 </PopoverContent>
@@ -201,15 +236,15 @@ export function CourtBookingFilter({
               <Label htmlFor="courtType">Loại sân</Label>
               <Select
                 value={courtTypeId}
-                onValueChange={setCourtTypeId}
-                disabled={isCustomer ? !cityId || !facilityId : false}
+                onValueChange={handleCourtTypeChange}
+                disabled={isCustomerUser && !facilityId}
               >
                 <SelectTrigger id="courtType">
                   <SelectValue placeholder="Chọn loại sân" />
                 </SelectTrigger>
                 <SelectContent>
-                  {mockCourtTypes.map((type: { id: string; name: string }) => (
-                    <SelectItem key={type.id} value={type.id}>
+                  {courtTypes.map((type: any) => (
+                    <SelectItem key={type.id} value={type.id.toString()}>
                       {type.name}
                     </SelectItem>
                   ))}

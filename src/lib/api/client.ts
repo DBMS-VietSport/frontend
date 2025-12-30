@@ -1,20 +1,14 @@
 /**
- * API Client - Centralized REST API utilities
- *
- * This module provides a typed, consistent way to make HTTP requests.
- * Currently configured for mock data, can be easily switched to real backend.
+ * Axios API Client - Configured HTTP client
  */
 
-// API Configuration
-const API_CONFIG = {
-  baseUrl: process.env.NEXT_PUBLIC_API_URL || "/api",
-  timeout: 30000,
-  headers: {
-    "Content-Type": "application/json",
-  },
-} as const;
+import axios, { AxiosInstance, AxiosError } from 'axios';
 
-// Error types
+// API Configuration
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '/api';
+const API_TIMEOUT = 30000;
+
+// Custom error class for consistency
 export class ApiError extends Error {
   constructor(
     public statusCode: number,
@@ -22,40 +16,18 @@ export class ApiError extends Error {
     public data?: unknown
   ) {
     super(message);
-    this.name = "ApiError";
+    this.name = 'ApiError';
   }
-}
-
-export class NetworkError extends Error {
-  constructor(message: string = "Network error occurred") {
-    super(message);
-    this.name = "NetworkError";
-  }
-}
-
-// Response type wrapper
-export interface ApiResponse<T> {
-  data: T;
-  status: number;
-  message?: string;
-}
-
-// Request options
-export interface RequestOptions {
-  headers?: Record<string, string>;
-  signal?: AbortSignal;
-  timeout?: number;
 }
 
 /**
  * Get auth token from storage
- * TODO: Integrate with useAuth hook for proper token management
  */
 function getAuthToken(): string | null {
-  if (typeof window === "undefined") return null;
+  if (typeof window === 'undefined') return null;
 
   try {
-    const authData = localStorage.getItem("vietsport_auth");
+    const authData = localStorage.getItem('vietsport_auth');
     if (authData) {
       const parsed = JSON.parse(authData);
       return parsed.token || null;
@@ -67,268 +39,53 @@ function getAuthToken(): string | null {
 }
 
 /**
- * Build request headers with auth token
+ * Axios instance with default config and interceptors
  */
-function buildHeaders(customHeaders?: Record<string, string>): HeadersInit {
-  const headers: Record<string, string> = {
-    ...API_CONFIG.headers,
-    ...customHeaders,
-  };
-
-  const token = getAuthToken();
-  if (token) {
-    headers["Authorization"] = `Bearer ${token}`;
-  }
-
-  return headers;
-}
+export const apiClient: AxiosInstance = axios.create({
+  baseURL: API_BASE_URL,
+  timeout: API_TIMEOUT,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
 
 /**
- * Build full URL from endpoint
+ * Request interceptor - Add auth token
  */
-function buildUrl(endpoint: string, params?: Record<string, string>): string {
-  const url = new URL(endpoint, API_CONFIG.baseUrl);
-
-  if (params) {
-    Object.entries(params).forEach(([key, value]) => {
-      if (value !== undefined && value !== null) {
-        url.searchParams.append(key, value);
-      }
-    });
-  }
-
-  return url.toString();
-}
-
-/**
- * Handle API response
- */
-async function handleResponse<T>(response: Response): Promise<T> {
-  if (!response.ok) {
-    let errorData: unknown;
-    try {
-      errorData = await response.json();
-    } catch {
-      errorData = await response.text();
+apiClient.interceptors.request.use(
+  (config) => {
+    const token = getAuthToken();
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
     }
-
-    throw new ApiError(
-      response.status,
-      `HTTP ${response.status}: ${response.statusText}`,
-      errorData
-    );
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
   }
-
-  // Handle empty responses (204 No Content)
-  if (response.status === 204) {
-    return undefined as T;
-  }
-
-  try {
-    return await response.json();
-  } catch {
-    return undefined as T;
-  }
-}
+);
 
 /**
- * Create fetch with timeout
+ * Response interceptor - Handle errors
  */
-async function fetchWithTimeout(
-  url: string,
-  options: RequestInit,
-  timeout: number
-): Promise<Response> {
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), timeout);
-
-  try {
-    const response = await fetch(url, {
-      ...options,
-      signal: controller.signal,
-    });
-    return response;
-  } finally {
-    clearTimeout(timeoutId);
-  }
-}
-
-// HTTP Methods
-
-/**
- * GET request
- */
-export async function get<T>(
-  endpoint: string,
-  params?: Record<string, string>,
-  options?: RequestOptions
-): Promise<T> {
-  const url = buildUrl(endpoint, params);
-
-  try {
-    const response = await fetchWithTimeout(
-      url,
-      {
-        method: "GET",
-        headers: buildHeaders(options?.headers),
-        signal: options?.signal,
-      },
-      options?.timeout || API_CONFIG.timeout
-    );
-
-    return handleResponse<T>(response);
-  } catch (error) {
-    if (error instanceof ApiError) throw error;
-    if (error instanceof Error && error.name === "AbortError") {
-      throw new NetworkError("Request timeout");
+apiClient.interceptors.response.use(
+  (response) => response,
+  (error: AxiosError) => {
+    if (error.response) {
+      // Server responded with error status
+      throw new ApiError(
+        error.response.status,
+        error.response.statusText || 'Request failed',
+        error.response.data
+      );
+    } else if (error.request) {
+      // Request was made but no response
+      throw new ApiError(0, 'Network error: No response from server');
+    } else {
+      // Something else happened
+      throw new ApiError(0, error.message || 'Unknown error occurred');
     }
-    throw new NetworkError(
-      error instanceof Error ? error.message : "Unknown error"
-    );
   }
-}
-
-/**
- * POST request
- */
-export async function post<TResponse, TBody = unknown>(
-  endpoint: string,
-  body?: TBody,
-  options?: RequestOptions
-): Promise<TResponse> {
-  const url = buildUrl(endpoint);
-
-  try {
-    const response = await fetchWithTimeout(
-      url,
-      {
-        method: "POST",
-        headers: buildHeaders(options?.headers),
-        body: body ? JSON.stringify(body) : undefined,
-        signal: options?.signal,
-      },
-      options?.timeout || API_CONFIG.timeout
-    );
-
-    return handleResponse<TResponse>(response);
-  } catch (error) {
-    if (error instanceof ApiError) throw error;
-    if (error instanceof Error && error.name === "AbortError") {
-      throw new NetworkError("Request timeout");
-    }
-    throw new NetworkError(
-      error instanceof Error ? error.message : "Unknown error"
-    );
-  }
-}
-
-/**
- * PUT request
- */
-export async function put<TResponse, TBody = unknown>(
-  endpoint: string,
-  body?: TBody,
-  options?: RequestOptions
-): Promise<TResponse> {
-  const url = buildUrl(endpoint);
-
-  try {
-    const response = await fetchWithTimeout(
-      url,
-      {
-        method: "PUT",
-        headers: buildHeaders(options?.headers),
-        body: body ? JSON.stringify(body) : undefined,
-        signal: options?.signal,
-      },
-      options?.timeout || API_CONFIG.timeout
-    );
-
-    return handleResponse<TResponse>(response);
-  } catch (error) {
-    if (error instanceof ApiError) throw error;
-    if (error instanceof Error && error.name === "AbortError") {
-      throw new NetworkError("Request timeout");
-    }
-    throw new NetworkError(
-      error instanceof Error ? error.message : "Unknown error"
-    );
-  }
-}
-
-/**
- * PATCH request
- */
-export async function patch<TResponse, TBody = unknown>(
-  endpoint: string,
-  body?: TBody,
-  options?: RequestOptions
-): Promise<TResponse> {
-  const url = buildUrl(endpoint);
-
-  try {
-    const response = await fetchWithTimeout(
-      url,
-      {
-        method: "PATCH",
-        headers: buildHeaders(options?.headers),
-        body: body ? JSON.stringify(body) : undefined,
-        signal: options?.signal,
-      },
-      options?.timeout || API_CONFIG.timeout
-    );
-
-    return handleResponse<TResponse>(response);
-  } catch (error) {
-    if (error instanceof ApiError) throw error;
-    if (error instanceof Error && error.name === "AbortError") {
-      throw new NetworkError("Request timeout");
-    }
-    throw new NetworkError(
-      error instanceof Error ? error.message : "Unknown error"
-    );
-  }
-}
-
-/**
- * DELETE request
- */
-export async function del<TResponse = void>(
-  endpoint: string,
-  options?: RequestOptions
-): Promise<TResponse> {
-  const url = buildUrl(endpoint);
-
-  try {
-    const response = await fetchWithTimeout(
-      url,
-      {
-        method: "DELETE",
-        headers: buildHeaders(options?.headers),
-        signal: options?.signal,
-      },
-      options?.timeout || API_CONFIG.timeout
-    );
-
-    return handleResponse<TResponse>(response);
-  } catch (error) {
-    if (error instanceof ApiError) throw error;
-    if (error instanceof Error && error.name === "AbortError") {
-      throw new NetworkError("Request timeout");
-    }
-    throw new NetworkError(
-      error instanceof Error ? error.message : "Unknown error"
-    );
-  }
-}
-
-// Export all methods as a single object for convenience
-export const apiClient = {
-  get,
-  post,
-  put,
-  patch,
-  del,
-};
+);
 
 export default apiClient;

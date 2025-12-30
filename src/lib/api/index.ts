@@ -1,29 +1,16 @@
 /**
  * API Module Exports
- *
- * Central export point for all API-related utilities and hooks.
  */
 
-// Client utilities
-export {
-  apiClient,
-  get,
-  post,
-  put,
-  patch,
-  del,
-  ApiError,
-  NetworkError,
-  type ApiResponse,
-  type RequestOptions,
-} from "./client";
+// Export axios client instance and error class
+export { apiClient, ApiError } from './client';
 
-// React Query configuration
-export {
-  createQueryClient,
-  getQueryClient,
-  queryKeys,
-} from "./queryClient";
+// Export booking API functions
+export * from './booking';
 
-// Provider component
-export { QueryProvider } from "./QueryProvider";
+// Export auth API functions  
+export * from './auth';
+
+// Export React Query provider and hooks
+export { QueryProvider } from './query-provider';
+export * from './use-bookings';

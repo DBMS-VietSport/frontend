@@ -6,17 +6,17 @@
 // =============================================================================
 
 // -----------------------------------------------------------------------------
-// Enums & Literal Types
+// Enums & Literal Types (Aligned with DB Constraints)
 // -----------------------------------------------------------------------------
 
-export type CourtStatus = "Available" | "InUse" | "Maintenance";
-export type BookingStatus = "Paid" | "Held" | "Booked" | "Cancelled" | "Pending";
-export type BookingType = "Online" | "Direct";
-export type PaymentStatusUI = "Chưa thanh toán" | "Đã thanh toán" | "Đã hủy";
-export type ServiceUnit = "Giờ" | "Lần" | "Lượt" | "Tháng" | "Trận" | "Chai";
-export type ServiceRentalType = "Nhân sự" | "Dụng cụ" | "Tiện ích";
-export type BranchServiceStatus = "Available" | "Unavailable";
-export type TimeSlotStatus = "available" | "booked" | "pending" | "past";
+export type CourtStatus = "Sẵn sàng" | "Bảo trì";
+export type BookingStatus = "Đã thanh toán" | "Chưa thanh toán" | "Đã hủy" | "Đang giữ chỗ";
+export type BookingType = "Online" | "Trực tiếp";
+export type ServiceUnit = "Cái" | "Người" | "Phòng" | "Chai" | "Giờ" | "Lượt" | "Tháng" | "Trận";
+export type ServiceRentalType = "Theo giờ" | "Theo lần";
+export type ServiceStockType = "theo_thoi_gian" | "tieu_hao" | "khong_gioi_han" | "hlv_trong_tai";
+export type BranchServiceStatus = "Còn" | "Hết";
+export type TimeSlotStatus = "Đã đặt" | "Đã hủy" | "Đã sử dụng" | "Trống" | "Đang giữ chỗ" | "available" | "booked" | "pending" | "past";
 
 // -----------------------------------------------------------------------------
 // Core Entities - Foundation Layer
@@ -60,13 +60,13 @@ export interface CourtType {
 
 export interface Court {
   id: number;
-  status: CourtStatus;
+  status: CourtStatus | string;
   capacity?: number;
   base_hourly_price: number;
   maintenance_date?: string;
   branch_id: number;
   court_type_id: number;
-  display_name?: string;
+  display_name?: string; // Frontend helper
   name?: string;
 }
 
@@ -112,8 +112,9 @@ export interface Customer {
 export interface Service {
   id: number;
   name: string;
-  unit: ServiceUnit;
-  rental_type: ServiceRentalType;
+  unit: ServiceUnit | string;
+  rental_type: ServiceRentalType | string;
+  stock_type?: ServiceStockType | string;
 }
 
 export interface BranchService {

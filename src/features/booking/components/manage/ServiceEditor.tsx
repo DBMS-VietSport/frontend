@@ -62,7 +62,7 @@ export function ServiceEditor({
   customerId,
 }: ServiceEditorProps) {
   const router = useRouter();
-  
+
   // Use extracted hook for all state and logic
   const {
     tempVoucherItems,
@@ -87,6 +87,7 @@ export function ServiceEditor({
     handleQuantityChange,
     handleTimeChange,
     handleDialogOpenChange,
+    getServiceInfo,
   } = useServiceEditor({
     branchId,
     initialItems,
@@ -136,6 +137,7 @@ export function ServiceEditor({
             onUpdateQuantity={handleUpdateTempItemQuantity}
             onConfirm={handleConfirmAddVoucher}
             onCancel={handleCancelAddVoucher}
+            getServiceInfo={getServiceInfo}
           />
         )}
       </div>
@@ -154,6 +156,7 @@ export function ServiceEditor({
           onQuantityChange={handleQuantityChange}
           onTimeChange={handleTimeChange}
           onItemChange={handleItemChange}
+          getServiceInfo={getServiceInfo}
         />
       )}
     </div>
@@ -167,11 +170,12 @@ export function ServiceEditor({
 interface AddServiceDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  availableServicesToAdd: Array<{ id: number; service_id: number; unit_price: number }>;
+  availableServicesToAdd: any[]; // Using any[] for now as types are being aligned
   selectedBranchServiceId: string;
   setSelectedBranchServiceId: (id: string) => void;
   tempVoucherItems: ServiceItemEdit[];
   calculateItemTotal: (item: ServiceItemEdit) => number;
+  getServiceInfo: (branchServiceId: number) => { branchService: any; service: any };
   onAddItem: () => void;
   onRemoveItem: (index: number) => void;
   onUpdateQuantity: (index: number, delta: number) => void;
@@ -187,6 +191,7 @@ function AddServiceDialog({
   setSelectedBranchServiceId,
   tempVoucherItems,
   calculateItemTotal,
+  getServiceInfo,
   onAddItem,
   onRemoveItem,
   onUpdateQuantity,
@@ -221,14 +226,11 @@ function AddServiceDialog({
                   <SelectValue placeholder="Chọn dịch vụ" />
                 </SelectTrigger>
                 <SelectContent>
-                  {availableServicesToAdd.map((bs) => {
-                    const svc = mockServices.find((s) => s.id === bs.service_id);
-                    return (
-                      <SelectItem key={bs.id} value={bs.id.toString()}>
-                        {svc?.name} - {formatVND(bs.unit_price)}/{svc?.unit}
-                      </SelectItem>
-                    );
-                  })}
+                  {availableServicesToAdd.map((bs) => (
+                    <SelectItem key={bs.id} value={bs.id.toString()}>
+                      {bs.name} - {formatVND(bs.unit_price)}/{bs.unit}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
               <Button onClick={onAddItem} disabled={!selectedBranchServiceId} size="sm">
@@ -253,6 +255,7 @@ function AddServiceDialog({
                     itemTotal={calculateItemTotal(item)}
                     onQuantityChange={onUpdateQuantity}
                     onRemove={onRemoveItem}
+                    getServiceInfo={getServiceInfo}
                   />
                 ))}
               </div>

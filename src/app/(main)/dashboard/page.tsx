@@ -2,6 +2,7 @@
 
 import { useAuth } from "@/features/auth/lib/useAuth";
 import { CustomerDashboard, StaffDashboard } from "@/features/dashboard/components";
+import { isCustomer } from "@/lib/role-labels";
 
 export default function DashboardPage() {
   const { user, loading } = useAuth();
@@ -10,8 +11,12 @@ export default function DashboardPage() {
     return <div className="text-center py-12">Đang tải...</div>;
   }
 
+  if (!user) {
+    return <div className="text-center py-12">Vui lòng đăng nhập</div>;
+  }
+
   // Show customer dashboard if user is a customer
-  if (user?.role === "customer") {
+  if (isCustomer(user)) {
     return <CustomerDashboard />;
   }
 

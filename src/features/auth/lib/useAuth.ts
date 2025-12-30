@@ -1,19 +1,19 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { MOCK_USERS, type MockUser } from "@/features/auth/mock/authMock";
+import { login, type AuthUser } from "@/lib/api/auth";
 
 const AUTH_STORAGE_KEY = "vietsport_auth";
 
 interface UseAuthReturn {
-  user: MockUser | null;
+  user: AuthUser | null;
   loading: boolean;
-  login: (username: string, password: string) => void;
+  login: (username: string, password: string) => Promise<void>;
   logout: () => void;
 }
 
 export function useAuth(): UseAuthReturn {
-  const [user, setUser] = useState<MockUser | null>(null);
+  const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
 
   // Load user from localStorage on mount
@@ -21,7 +21,7 @@ export function useAuth(): UseAuthReturn {
     try {
       const storedUser = localStorage.getItem(AUTH_STORAGE_KEY);
       if (storedUser) {
-        const parsedUser = JSON.parse(storedUser) as MockUser;
+        const parsedUser = JSON.parse(storedUser) as AuthUser;
         setUser(parsedUser);
       }
     } catch (error) {
@@ -32,19 +32,23 @@ export function useAuth(): UseAuthReturn {
     }
   }, []);
 
-  const login = useCallback((username: string, password: string) => {
-    // Find user in mock data
-    const foundUser = MOCK_USERS.find(
-      (u) => u.username === username && u.password === password
-    );
+  const handleLogin = useCallback(async (username: string, password: string) => {
+    try {
+      const response = await login({ username, password });
 
-    if (!foundUser) {
-      throw new Error("Tên đăng nhập hoặc mật khẩu không đúng");
+      // Store user data and token
+      const userData = response.user;
+      const authData = {
+        ...userData,
+        token: response.access_token,
+      };
+
+      setUser(userData);
+      localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(authData));
+    } catch (error) {
+      // Re-throw the error so the component can handle it
+      throw error;
     }
-
-    // Store user in state and localStorage
-    setUser(foundUser);
-    localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(foundUser));
   }, []);
 
   const logout = useCallback(() => {
@@ -55,7 +59,7 @@ export function useAuth(): UseAuthReturn {
   return {
     user,
     loading,
-    login,
+    login: handleLogin,
     logout,
   };
 }

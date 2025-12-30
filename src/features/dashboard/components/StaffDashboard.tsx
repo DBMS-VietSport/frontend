@@ -16,6 +16,18 @@ export function StaffDashboard() {
             Nội dung dashboard sẽ được thêm vào đây
           </p>
         </div>
+        <div className="rounded-lg border bg-card p-6">
+          <h3 className="font-semibold">Đặt sân hôm nay</h3>
+          <p className="text-2xl font-bold">0</p>
+        </div>
+        <div className="rounded-lg border bg-card p-6">
+          <h3 className="font-semibold">Doanh thu</h3>
+          <p className="text-2xl font-bold">0 VND</p>
+        </div>
+        <div className="rounded-lg border bg-card p-6">
+          <h3 className="font-semibold">Khách hàng</h3>
+          <p className="text-2xl font-bold">0</p>
+        </div>
       </div>
     </div>
   );

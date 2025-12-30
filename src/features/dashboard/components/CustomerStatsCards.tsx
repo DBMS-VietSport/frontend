@@ -1,8 +1,22 @@
 import { Card, CardContent } from "@/ui/card";
 import { Calendar, Clock, Award, ShoppingBag } from "lucide-react";
 import { formatVND } from "@/features/booking/utils/pricing";
-import type { CustomerBookingStat } from "@/features/customer/mock/customerDashboardRepo";
 import { MembershipBadge } from "./MembershipBadge";
+
+interface CustomerBookingStat {
+  totalBookings: number;
+  totalPlayHours: number;
+  upcomingBookings: Array<{
+    id: number;
+    branch: string;
+    courtName: string;
+    date: string;
+    timeRange: string;
+    status: string;
+  }>;
+  membershipLevel: string;
+  totalServiceSpending: number;
+}
 
 interface CustomerStatsCardsProps {
   stats: CustomerBookingStat;

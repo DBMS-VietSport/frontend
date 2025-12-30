@@ -4,6 +4,7 @@ import * as React from "react";
 import { Check, Circle } from "lucide-react";
 import { cn } from "@/utils";
 import { useAuth } from "@/features/auth/lib/useAuth";
+import { ROLES } from "@/lib/role-labels";
 
 interface BookingProgressProps {
   currentStep: number;
@@ -29,10 +30,16 @@ const steps = [
 
 export function BookingProgress({ currentStep }: BookingProgressProps) {
   const { user } = useAuth();
-  const isReceptionist = user?.role === "receptionist";
+  const isReceptionist = user?.role === ROLES.RECEPTIONIST || user?.role?.toLowerCase() === "receptionist";
+
+  // Filter steps: hide payment step (id 3) for receptionists
+  const visibleSteps = isReceptionist
+    ? steps.filter(s => s.id !== 3)
+    : steps;
+
   return (
     <div className="flex items-center gap-2">
-      {steps.map((step, index) => {
+      {visibleSteps.map((step, index) => {
         const isCompleted = step.id < currentStep;
         const isCurrent = step.id === currentStep;
 
@@ -70,7 +77,7 @@ export function BookingProgress({ currentStep }: BookingProgressProps) {
                 {isReceptionist ? step.label.receptionist : step.label.customer}
               </span>
             </div>
-            {index < steps.length - 1 && (
+            {index < visibleSteps.length - 1 && (
               <div
                 className={cn(
                   "h-px w-8 transition-colors hidden sm:block",

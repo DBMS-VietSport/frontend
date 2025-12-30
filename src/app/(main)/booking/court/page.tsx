@@ -9,12 +9,12 @@ import {
   CourtTimeSlotGrid,
 } from "@/features/booking/components";
 import { Separator } from "@/ui/separator";
-import { mockCustomerCourtTypes as mockCourtTypes } from "@/features/booking/mockData";
 import type { CustomerCourt as Court, CustomerCourtType as CourtType, TimeSlot } from "@/types";
 import { useBookingFlowStore } from "@/features/booking/stores/useBookingFlowStore";
 import { useAuth } from "@/features/auth/lib/useAuth";
 import { BookingProgress } from "@/features/booking/components";
-import { MOCK_CUSTOMERS } from "@/features/booking/mock/bookingFlowMock";
+import { ROLES } from "@/lib/role-labels";
+import { useCustomers, useCourtTypes, useCourts, useBranches } from "@/lib/api";
 
 export default function BookingCourtPage() {
   const router = useRouter();
@@ -22,15 +22,49 @@ export default function BookingCourtPage() {
   const { setCourtBooking, setCurrentStep, setSelectedCustomerId } =
     useBookingFlowStore();
 
-  const isReceptionist = user?.role === "receptionist";
+  const isReceptionist = user?.role === ROLES.RECEPTIONIST || user?.role?.toLowerCase() === "receptionist";
+
+  // Fetch real data
+  const { data: customers = [] } = useCustomers();
+  const { data: courtTypes = [] } = useCourtTypes();
+  const { data: branches = [] } = useBranches();
+
 
   // Filter state
   const [filters, setFilters] = React.useState({
     cityId: "",
-    facilityId: "",
+    facilityId: (Array.isArray(branches) && branches[0]?.id) ? branches[0].id.toString() : "1",
     courtTypeId: "",
     date: new Date(),
   });
+  // Sync facilityId with user's branch or first available branch
+  React.useEffect(() => {
+    if (user?.branchId && !filters.facilityId) {
+      setFilters(prev => ({ ...prev, facilityId: user.branchId.toString() }));
+    } else if (branches.length > 0 && !filters.facilityId) {
+      setFilters(prev => ({ ...prev, facilityId: branches[0].id.toString() }));
+    }
+  }, [user?.branchId, branches, filters.facilityId]);
+
+  // Fetch courts based on selected branch and court type
+  const { data: rawCourts = [], isLoading: isLoadingCourts } = useCourts(
+    filters.facilityId ? parseInt(filters.facilityId) : undefined,
+    filters.courtTypeId ? parseInt(filters.courtTypeId) : undefined
+  );
+
+  // Transform courts for UI
+  const courts = React.useMemo(() => {
+    return rawCourts.map((c: any) => ({
+      id: c.id.toString(),
+      name: c.name,
+      type: c.court_type_id?.toString() || filters.courtTypeId,
+      facilityId: c.branch_id?.toString() || filters.facilityId,
+      imageUrl: "https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?q=80&w=2070&auto=format&fit=crop",
+      baseHourlyPrice: c.base_hourly_price || 50000,
+      capacity: c.capacity || 4,
+    } as Court));
+  }, [rawCourts, filters.courtTypeId, filters.facilityId]);
+
 
   // Selection state
   const [selectedCourt, setSelectedCourt] = React.useState<Court | null>(null);
@@ -39,22 +73,49 @@ export default function BookingCourtPage() {
     null
   );
 
+  // Transform customers for UI
+  const customersForUI = React.useMemo(() => {
+    return customers.map((c: any) => ({
+      id: c.id.toString(),
+      name: c.full_name,
+      phone: c.phone_number,
+      email: c.email,
+    }));
+  }, [customers]);
+
   // Get current court type
+  const currentBranch = React.useMemo(() => {
+    const branch = branches.find((b: any) => b.id.toString() === filters.facilityId) || null;
+    console.log("Current Branch sync:", { facilityId: filters.facilityId, found: !!branch, branch });
+    return branch;
+  }, [branches, filters.facilityId]);
+
   const currentCourtType = React.useMemo(() => {
     if (!filters.courtTypeId) return null;
-    return (
-      mockCourtTypes.find((type) => type.id.toString() === filters.courtTypeId) || null
-    );
-  }, [filters.courtTypeId]);
+    const courtType = courtTypes.find((type: any) => type.id.toString() === filters.courtTypeId);
+    if (!courtType) return null;
+
+    return {
+      id: courtType.id.toString(),
+      name: courtType.name,
+      slotDuration: (courtType as any).slotDuration || (courtType as any).rent_duration || 60,
+      icon: "🏸",
+    } as CourtType;
+  }, [filters.courtTypeId, courtTypes]);
 
   // Reset selections when filters change
   React.useEffect(() => {
     setSelectedCourt(null);
     setSelectedSlots([]);
-  }, [filters.courtTypeId, filters.facilityId]);
+  }, [filters.courtTypeId, filters.facilityId, filters.date]);
 
-  const handleFilterChange = React.useCallback((newFilters: typeof filters) => {
-    setFilters(newFilters);
+  const handleFilterChange = React.useCallback((newFilters: any) => {
+    // If date is a string, convert it to a Date object
+    let processedFilters = { ...newFilters };
+    if (processedFilters.date && typeof processedFilters.date === "string") {
+      processedFilters.date = new Date(processedFilters.date);
+    }
+    setFilters(processedFilters);
   }, []);
 
   const handleCourtSelect = React.useCallback((court: Court) => {
@@ -88,19 +149,23 @@ export default function BookingCourtPage() {
       return;
     }
 
-    // Calculate total court fee
-    const durationHours =
-      selectedSlots.length * (currentCourtType.slotDuration / 60);
-    const pricePerHour = 50000; // Mock price
-    const totalCourtFee = pricePerHour * durationHours;
+    // Calculate total court fee from individual slot prices using numeric addition
+    const totalCourtFee = selectedSlots.reduce((sum, slot) => {
+      const price = typeof slot.price === 'string' ? parseFloat(slot.price) : (slot.price || 0);
+      return sum + price;
+    }, 0);
+    const pricePerHour = selectedCourt.baseHourlyPrice || 50000;
 
     // Generate booking ID
     const bookingId = `BK-${Date.now()}`;
 
     // Get customer info
     const customer = isReceptionist
-      ? MOCK_CUSTOMERS.find((c) => c.id === selectedCustomer)
+      ? customersForUI.find((c) => c.id === selectedCustomer)
       : { id: user?.username || "guest", name: user?.fullName || "Guest" };
+
+    // Get branch name
+    const branch = branches.find((b: any) => b.id.toString() === filters.facilityId);
 
     // Save court booking to store
     setCourtBooking({
@@ -111,9 +176,13 @@ export default function BookingCourtPage() {
       courtName: selectedCourt.name,
       courtType: currentCourtType.name,
       facilityId: filters.facilityId,
-      facilityName: "Mock Facility", // In production, get from filter
+      facilityName: (currentBranch as any)?.name || branch?.branchName || "VietSport",
       date: filters.date,
-      timeSlots: selectedSlots.map((s) => ({ start: s.start, end: s.end })),
+      timeSlots: selectedSlots.map((s) => ({
+        start: s.start,
+        end: s.end,
+        price: s.price
+      })),
       pricePerHour,
       totalCourtFee,
       status: "held",
@@ -136,6 +205,8 @@ export default function BookingCourtPage() {
     selectedSlots,
     filters,
     user,
+    branches,
+    customersForUI,
     setCourtBooking,
     setCurrentStep,
     setSelectedCustomerId,
@@ -166,21 +237,32 @@ export default function BookingCourtPage() {
       <section>
         <CourtBookingFilter
           onFilterChange={handleFilterChange}
+          selectedFilters={filters}
           selectedCustomerId={selectedCustomer}
           onCustomerChange={setSelectedCustomer}
-          customers={isReceptionist ? MOCK_CUSTOMERS : []}
+          customers={isReceptionist ? customersForUI : []}
+          branches={branches}
+          courtTypes={courtTypes}
         />
       </section>
 
       {/* Court Selection */}
       {filters.courtTypeId && (
         <section className="animate-in fade-in-50 duration-500">
-          <CourtSelector
-            courtTypeId={filters.courtTypeId}
-            facilityId={filters.facilityId}
-            selectedCourtId={selectedCourt?.id || null}
-            onCourtSelect={handleCourtSelect}
-          />
+          {isLoadingCourts ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+              <span className="ml-3 text-muted-foreground">Đang tải danh sách sân...</span>
+            </div>
+          ) : (
+            <CourtSelector
+              courtTypeId={filters.courtTypeId}
+              facilityId={filters.facilityId}
+              selectedCourtId={selectedCourt?.id || null}
+              onCourtSelect={handleCourtSelect}
+              courts={courts}
+            />
+          )}
         </section>
       )}
 
@@ -190,7 +272,8 @@ export default function BookingCourtPage() {
           <CourtTimeSlotGrid
             court={selectedCourt}
             courtType={currentCourtType}
-            selectedDate={filters.date}
+            branch={currentBranch}
+            selectedDate={filters.date instanceof Date ? filters.date : new Date(filters.date)}
             selectedSlots={selectedSlots}
             onSlotSelect={handleSlotSelect}
           />

@@ -8,10 +8,17 @@ import {
   BookingProgress,
 } from "@/features/booking/components";
 import { Separator } from "@/ui/separator";
-import { mockServiceItems, mockCoaches, mockCourts, mockCustomerCourtTypes as mockCourtTypes } from "@/features/booking/mockData";
 import { Button } from "@/ui/button";
-import { ArrowLeft, AlertCircle } from "lucide-react";
-import type { ServiceItem, Coach, TimeSlot } from "@/types";
+import { ArrowLeft } from "lucide-react";
+import type {
+  ServiceItem,
+  Coach,
+  TimeSlot,
+  ServiceItemCategory,
+  ServiceItemUnit,
+  CustomerCourt as Court,
+  CustomerCourtType as CourtType
+} from "@/types";
 import { useBookingFlowStore } from "@/features/booking/stores/useBookingFlowStore";
 import { useAuth } from "@/features/auth/lib/useAuth";
 import {
@@ -20,15 +27,15 @@ import {
 } from "@/features/booking/components/shared/BookingSelector";
 import {
   CustomerSelector,
-  type Customer,
 } from "@/features/booking/components/shared/CustomerSelector";
 import { Card, CardContent } from "@/ui/card";
 import { Label } from "@/ui/label";
+import { ROLES } from "@/lib/role-labels";
+import { useCustomers, useCourtBookings, useBranchServices, useEmployees, useCustomerCourtBookings, useAvailableTrainers } from "@/lib/api";
+import { toast } from "sonner";
+import { setLastBooking } from "@/features/booking/mock/bookingFlowStore";
 
-import {
-  MOCK_CUSTOMERS,
-  MOCK_COURT_BOOKINGS,
-} from "@/features/booking/mock/bookingFlowMock";
+const EMPTY_ARRAY: any[] = [];
 
 export default function ServicesPage() {
   const router = useRouter();
@@ -42,9 +49,11 @@ export default function ServicesPage() {
     setSelectedCustomerId,
     setServiceBooking,
     setCurrentStep,
+    resetFlow,
   } = useBookingFlowStore();
 
-  const isReceptionist = user?.role === "receptionist";
+  const isReceptionist = user?.role === ROLES.RECEPTIONIST || user?.role?.toLowerCase() === "receptionist";
+  const branchId = user?.branchId || 1;
 
   // Get bookingId and customerId from query params (for edit flow)
   const bookingIdFromQuery = searchParams.get("bookingId");
@@ -58,70 +67,214 @@ export default function ServicesPage() {
     bookingIdFromQuery || selectedCourtBookingId
   );
 
-  // Auto-select booking if coming from edit page
-  React.useEffect(() => {
-    if (bookingIdFromQuery) {
-      // Find booking by ID (in production, fetch from API)
-      const booking = MOCK_COURT_BOOKINGS.find(
-        (b) => b.id === bookingIdFromQuery
-      );
-      if (booking) {
-        setLocalBookingId(bookingIdFromQuery);
-        setSelectedCourtBookingId(bookingIdFromQuery);
-        setBookingData({
-          date: booking.date,
-          court: mockCourts[0], // Mock
-          courtType: mockCourtTypes[0], // Mock
-          timeSlots: [
-            {
-              start: booking.timeRange.split(" - ")[0],
-              end: booking.timeRange.split(" - ")[1],
-              status: "available" as const,
-            },
-          ] as TimeSlot[],
-        });
+  // Fetch real data
+  const { data: qCustomersData } = useCustomers();
+  const customersData = qCustomersData ?? EMPTY_ARRAY;
+
+  const { data: qCustomerBookingsData, isLoading: isLoadingBookings } = useCustomerCourtBookings(
+    localCustomerId ? parseInt(localCustomerId) : 0,
+    branchId
+  );
+  const customerBookingsData = qCustomerBookingsData ?? EMPTY_ARRAY;
+
+  const { data: qBranchServicesData } = useBranchServices(branchId);
+  const branchServicesData = qBranchServicesData ?? EMPTY_ARRAY;
+
+  const { data: qAvailableTrainersData } = useAvailableTrainers(
+    localBookingId ? parseInt(localBookingId) : 0
+  );
+  const availableTrainersData = qAvailableTrainersData ?? EMPTY_ARRAY;
+
+  // Transform data for UI
+  const customers = React.useMemo(() => {
+    return (customersData as any[]).map((c: any) => ({
+      id: c.id.toString(),
+      name: c.full_name,
+      phone: c.phone_number,
+      email: c.email,
+    }));
+  }, [customersData]);
+
+  const availBookings: CourtBookingOption[] = React.useMemo(() => {
+    return (customerBookingsData as any[]).map((b: any) => {
+      let status: "held" | "pending" | "confirmed" | "paid" = "pending";
+      const bStatus = b.status?.toLowerCase();
+      if (bStatus?.includes("thanh toán") || bStatus === "paid") status = "paid";
+      else if (bStatus?.includes("xác nhận")) status = "confirmed";
+      else if (bStatus?.includes("giữ")) status = "held";
+
+      // Ensure slots is an array
+      let parsedSlots: any[] = [];
+      try {
+        parsedSlots = typeof b.slots === "string" ? JSON.parse(b.slots) : b.slots;
+        if (!Array.isArray(parsedSlots)) parsedSlots = [];
+      } catch (e) {
+        console.error("Error parsing slots:", e);
       }
-    }
-    if (customerIdFromQuery) {
-      setLocalCustomerId(customerIdFromQuery);
-      setSelectedCustomerId(customerIdFromQuery);
-    }
-  }, [
-    bookingIdFromQuery,
-    customerIdFromQuery,
-    setSelectedCourtBookingId,
-    setSelectedCustomerId,
-  ]);
+
+      // Parse slots to get time range
+      let timeRange = "-";
+      if (parsedSlots.length > 0) {
+        const first = parsedSlots[0];
+        const last = parsedSlots[parsedSlots.length - 1];
+        const start = first.start_time.includes("T")
+          ? first.start_time.split("T")[1].substring(0, 5)
+          : first.start_time.substring(0, 5);
+        const end = last.end_time.includes("T")
+          ? last.end_time.split("T")[1].substring(0, 5)
+          : last.end_time.substring(0, 5);
+        timeRange = `${start} - ${end}`;
+      }
+
+      return {
+        id: b.id.toString(),
+        bookingRef: `BK00${b.id}`,
+        courtName: b.court_name || '-',
+        customerName: b.customer_name || '-',
+        courtType: b.court_type || "Sân cầu lông",
+        date: new Date(b.booking_date),
+        timeRange: timeRange,
+        status: status,
+        totalAmount: b.total_price || 0,
+        slots: parsedSlots,
+      };
+    });
+  }, [customerBookingsData]);
+
+  const services: ServiceItem[] = React.useMemo(() => {
+    return (branchServicesData as any[]).map((bs: any) => {
+      const name = bs.name || '-';
+      let category: ServiceItemCategory = "equipment";
+      let icon = "🎾";
+
+      const lowerName = name.toLowerCase();
+
+      if (lowerName.includes("nước") || lowerName.includes("revive") || lowerName.includes("drink")) {
+        category = "drink";
+        icon = "🥤";
+      } else if (
+        lowerName.includes("tủ") ||
+        lowerName.includes("phòng") ||
+        lowerName.includes("locker") ||
+        lowerName.includes("shower") ||
+        lowerName.includes("sân")
+      ) {
+        category = "facility";
+        icon = "🏢";
+      }
+
+      // Map unit from rental_type or fallback to unit
+      let unit: ServiceItemUnit = "piece";
+
+      if (bs.rental_type && bs.rental_type.toLowerCase().includes("giờ")) {
+        unit = "hour";
+      } else if (bs.unit) {
+        const u = bs.unit.toLowerCase();
+        if (u.includes("giờ") || u === "hour") unit = "hour";
+        else if (u.includes("bộ") || u === "set") unit = "set";
+      }
+
+      return {
+        id: bs.id.toString(),
+        name: name,
+        price: bs.unit_price,
+        unit: unit,
+        category: category,
+        quantity: 0,
+        available: bs.current_stock || 0,
+        icon: icon,
+      };
+    });
+  }, [branchServicesData]);
+
+  const coaches: Coach[] = React.useMemo(() => {
+    return (availableTrainersData as any[]).map((t: any) => {
+      return {
+        id: t.id.toString(),
+        name: t.full_name,
+        sport: t.sport_type || "Cầu lông",
+        pricePerHour: t.price_per_hour || 200000,
+        quantity: 0,
+        rating: 5,
+        experience: t.num_of_exp ? `${t.num_of_exp} năm` : "5 năm",
+        avatarUrl: "",
+      };
+    });
+  }, [availableTrainersData]);
+
+  // Selection state using ID-to-selection maps for stability
+  const [serviceSelections, setServiceSelections] = React.useState<Record<string, {
+    quantity: number;
+    durationHours?: number;
+    hourEntries?: Array<{ id: string; hours: number }>;
+  }>>({});
+
+  const [coachSelections, setCoachSelections] = React.useState<Record<string, {
+    quantity: number;
+    durationHours?: number;
+  }>>({});
+
+  // Derive active services/coaches with selection data merged in
+  const activeServices = React.useMemo(() => {
+    return services.map(s => ({
+      ...s,
+      ...(serviceSelections[s.id] || { quantity: 0 })
+    }));
+  }, [services, serviceSelections]);
+
+  const activeCoaches = React.useMemo(() => {
+    return coaches.map(c => ({
+      ...c,
+      ...(coachSelections[c.id] || { quantity: 0 })
+    }));
+  }, [coaches, coachSelections]);
 
   // Initialize with court booking from store if available
   const [bookingData, setBookingData] = React.useState(() => {
     if (courtBookingData) {
       return {
         date: courtBookingData.date,
-        court: mockCourts[0], // Mock - in production, fetch by ID
-        courtType: mockCourtTypes[0], // Mock
+        court: {
+          id: courtBookingData.courtId?.toString() || "1",
+          name: courtBookingData.courtName,
+          type: "1",
+          facilityId: "1",
+          imageUrl: "",
+          capacity: 4,
+          baseHourlyPrice: 50000
+        } as Court,
+        courtType: {
+          id: "1",
+          name: courtBookingData.courtType,
+          slotDuration: 60,
+          icon: "🏸"
+        } as CourtType,
         timeSlots: courtBookingData.timeSlots.map((slot) => ({
           ...slot,
-          status: "available" as const,
+          status: "Trống" as const,
         })) as TimeSlot[],
       };
     }
     return {
       date: new Date(),
-      court: mockCourts[0],
-      courtType: mockCourtTypes[0],
-      timeSlots: [
-        { start: "08:00", end: "09:00", status: "available" as const },
-        { start: "09:00", end: "10:00", status: "available" as const },
-      ] as TimeSlot[],
+      court: {
+        id: "1",
+        name: "Sân chưa chọn",
+        type: "1",
+        facilityId: "1",
+        imageUrl: "",
+        capacity: 4,
+        baseHourlyPrice: 50000
+      } as Court,
+      courtType: {
+        id: "1",
+        name: "Cầu lông",
+        slotDuration: 60,
+        icon: "🏸"
+      } as CourtType,
+      timeSlots: [] as TimeSlot[],
     };
   });
-
-  // Service state
-  const [services, setServices] = React.useState<ServiceItem[]>([
-    ...mockServiceItems,
-  ]);
-  const [coaches, setCoaches] = React.useState<Coach[]>([...mockCoaches]);
 
   const handleServiceUpdate = React.useCallback(
     (
@@ -130,27 +283,24 @@ export default function ServicesPage() {
       durationHours?: number,
       hourEntries?: Array<{ id: string; hours: number }>
     ) => {
-      setServices((prev) =>
-        prev.map((s) =>
-          s.id === id
-            ? {
-                ...s,
-                quantity,
-                durationHours,
-                hourEntries: hourEntries || s.hourEntries,
-              }
-            : s
-        )
-      );
+      setServiceSelections((prev) => ({
+        ...prev,
+        [id]: {
+          quantity,
+          durationHours,
+          hourEntries: hourEntries || prev[id]?.hourEntries,
+        },
+      }));
     },
     []
   );
 
   const handleCoachUpdate = React.useCallback(
     (id: string, quantity: number, durationHours?: number) => {
-      setCoaches((prev) =>
-        prev.map((c) => (c.id === id ? { ...c, quantity, durationHours } : c))
-      );
+      setCoachSelections((prev) => ({
+        ...prev,
+        [id]: { quantity, durationHours },
+      }));
     },
     []
   );
@@ -173,41 +323,43 @@ export default function ServicesPage() {
       setLocalBookingId(bookingId);
       setSelectedCourtBookingId(bookingId);
 
-      // Load booking data
+      // Load booking data with full metadata
       if (bookingId) {
-        const booking = MOCK_COURT_BOOKINGS.find((b) => b.id === bookingId);
+        const booking = availBookings.find((b) => b.id === bookingId);
         if (booking) {
-          // Update booking data based on selected booking
           setBookingData({
             date: booking.date,
-            court: mockCourts[0], // Mock
-            courtType: mockCourtTypes[0], // Mock
-            timeSlots: [
-              {
-                start: booking.timeRange.split(" - ")[0],
-                end: booking.timeRange.split(" - ")[1],
-                status: "available" as const,
-              },
-            ] as TimeSlot[],
+            court: {
+              id: booking.id, // This is booking ID, but summary card expects court object
+              name: booking.courtName,
+              type: booking.courtType,
+              facilityId: "1",
+              imageUrl: "",
+              capacity: 4,
+              baseHourlyPrice: booking.totalAmount / (booking.slots.length || 1) // Rough estimation if not explicit
+            } as Court,
+            courtType: {
+              id: "1",
+              name: booking.courtType,
+              slotDuration: 60,
+              icon: "🏸"
+            } as CourtType,
+            timeSlots: booking.slots.map((s) => ({
+              start: s.start_time.includes("T")
+                ? s.start_time.split("T")[1].substring(0, 5)
+                : s.start_time.substring(0, 5),
+              end: s.end_time.includes("T")
+                ? s.end_time.split("T")[1].substring(0, 5)
+                : s.end_time.substring(0, 5),
+              status: "Trống" as const,
+              price: s.price || 0,
+            })) as TimeSlot[],
           });
         }
       }
     },
-    [setSelectedCourtBookingId]
+    [setSelectedCourtBookingId, availBookings]
   );
-
-  // Filter bookings based on selected customer (for receptionist)
-  const availableBookings = React.useMemo(() => {
-    if (isReceptionist && localCustomerId) {
-      // In production, filter bookings by customer ID
-      return MOCK_COURT_BOOKINGS;
-    }
-    if (!isReceptionist) {
-      // For customers, show only their bookings
-      return MOCK_COURT_BOOKINGS;
-    }
-    return [];
-  }, [isReceptionist, localCustomerId]);
 
   const handleContinue = React.useCallback(() => {
     if (!localBookingId) {
@@ -217,7 +369,7 @@ export default function ServicesPage() {
 
     // Calculate total service fee
     let totalServiceFee = 0;
-    services.forEach((service) => {
+    activeServices.forEach((service) => {
       if (service.quantity > 0 && service.unit !== "free") {
         if (service.unit === "hour") {
           totalServiceFee +=
@@ -228,7 +380,7 @@ export default function ServicesPage() {
       }
     });
 
-    coaches.forEach((coach) => {
+    activeCoaches.forEach((coach) => {
       if (coach.quantity > 0) {
         totalServiceFee +=
           coach.pricePerHour * coach.quantity * (coach.durationHours || 1);
@@ -240,7 +392,7 @@ export default function ServicesPage() {
     setServiceBooking({
       id: serviceBookingId,
       courtBookingId: localBookingId,
-      services: services
+      services: activeServices
         .filter((s) => s.quantity > 0)
         .map((s) => ({
           id: s.id,
@@ -250,7 +402,7 @@ export default function ServicesPage() {
           unit: s.unit,
           durationHours: s.durationHours,
         })),
-      coaches: coaches
+      coaches: activeCoaches
         .filter((c) => c.quantity > 0)
         .map((c) => ({
           id: c.id,
@@ -263,20 +415,52 @@ export default function ServicesPage() {
     });
 
     // Move to next step
-    setCurrentStep(3);
-
-    // If coming from edit flow, preserve bookingId in URL
-    const bookingIdParam = bookingIdFromQuery
-      ? `?bookingId=${bookingIdFromQuery}`
-      : "";
-    router.push(`/booking/payment${bookingIdParam}`);
+    if (isReceptionist) {
+      const booking = availBookings.find((b) => b.id === localBookingId);
+      if (booking) {
+        setLastBooking({
+          bookingId: booking.bookingRef,
+          branch: "VietSport TP. Hồ Chí Minh - Quận 1",
+          courtName: booking.courtName,
+          courtType: booking.courtType,
+          date: booking.date.toISOString(),
+          timeRange: booking.timeRange,
+          services: activeServices
+            .filter((s) => s.quantity > 0)
+            .map((s) => ({
+              name: s.name,
+              qty: s.quantity,
+              price: s.price,
+              unit: s.unit,
+            })),
+          subtotal: totalServiceFee, // Just service fee
+          total: totalServiceFee,
+          paymentMethod: "counter", // Default to counter/cash
+          status: "success",
+        });
+      }
+      toast.success("Đã lập phiếu dịch vụ thành công");
+      resetFlow();
+      router.push("/booking/confirmation");
+    } else {
+      setCurrentStep(3);
+      // If coming from edit flow, preserve bookingId in URL
+      const bookingIdParam = bookingIdFromQuery
+        ? `?bookingId=${bookingIdFromQuery}`
+        : "";
+      router.push(`/booking/payment${bookingIdParam}`);
+    }
   }, [
     router,
     localBookingId,
-    services,
-    coaches,
+    activeServices,
+    activeCoaches,
     setServiceBooking,
     setCurrentStep,
+    bookingIdFromQuery,
+    isReceptionist,
+    availBookings,
+    resetFlow,
   ]);
 
   const handleBack = React.useCallback(() => {
@@ -325,11 +509,10 @@ export default function ServicesPage() {
                 <h3 className="text-lg font-semibold">Bộ lọc</h3>
               </div>
               <div
-                className={`grid gap-4 ${
-                  isReceptionist
-                    ? "grid-cols-1 md:grid-cols-2 lg:grid-cols-2"
-                    : "grid-cols-1 md:grid-cols-1 lg:grid-cols-1"
-                }`}
+                className={`grid gap-4 ${isReceptionist
+                  ? "grid-cols-1 md:grid-cols-2 lg:grid-cols-2"
+                  : "grid-cols-1 md:grid-cols-1 lg:grid-cols-1"
+                  }`}
               >
                 {/* 1. Khách hàng (chỉ cho receptionist) */}
                 {isReceptionist && (
@@ -338,7 +521,7 @@ export default function ServicesPage() {
                     <CustomerSelector
                       value={localCustomerId}
                       onChange={handleCustomerChange}
-                      customers={MOCK_CUSTOMERS}
+                      customers={customers}
                       placeholder="Chọn khách hàng..."
                     />
                   </div>
@@ -347,18 +530,24 @@ export default function ServicesPage() {
                 {/* 2. Phiếu đặt sân */}
                 <div className="space-y-2">
                   <Label htmlFor="booking">Phiếu đặt sân</Label>
-                  <BookingSelector
-                    value={localBookingId}
-                    onChange={handleBookingChange}
-                    bookings={availableBookings}
-                    placeholder="Chọn phiếu đặt sân..."
-                    emptyMessage={
-                      isReceptionist && !localCustomerId
-                        ? "Vui lòng chọn khách hàng trước"
-                        : "Không tìm thấy phiếu đặt sân"
-                    }
-                    disabled={isReceptionist && !localCustomerId}
-                  />
+                  {isLoadingBookings ? (
+                    <div className="h-10 w-full flex items-center justify-center border rounded-md bg-muted/20 animate-pulse text-xs text-muted-foreground">
+                      Đang tải phiếu đặt...
+                    </div>
+                  ) : (
+                    <BookingSelector
+                      value={localBookingId}
+                      onChange={handleBookingChange}
+                      bookings={availBookings}
+                      placeholder="Chọn phiếu đặt sân..."
+                      emptyMessage={
+                        isReceptionist && !localCustomerId
+                          ? "Vui lòng chọn khách hàng trước"
+                          : "Không tìm thấy phiếu đặt sân"
+                      }
+                      disabled={isReceptionist && !localCustomerId}
+                    />
+                  )}
                 </div>
               </div>
             </div>
@@ -375,8 +564,8 @@ export default function ServicesPage() {
             {/* Service Booking Form */}
             <div className="lg:col-span-2 space-y-6">
               <ServiceBookingForm
-                services={services}
-                coaches={coaches}
+                services={activeServices}
+                coaches={activeCoaches}
                 onServiceUpdate={handleServiceUpdate}
                 onCoachUpdate={handleCoachUpdate}
               />
@@ -389,9 +578,11 @@ export default function ServicesPage() {
                 timeSlots={bookingData.timeSlots}
                 court={bookingData.court}
                 courtType={bookingData.courtType}
-                services={services}
-                coaches={coaches}
+                totalCourtPrice={bookingData.court.baseHourlyPrice * (bookingData.timeSlots.length || 1)} // Use the stored total price (we abused baseHourlyPrice to store total/slots)
+                services={activeServices}
+                coaches={activeCoaches}
                 onContinue={handleContinue}
+                actionLabel={isReceptionist ? "Xác nhận" : "Tiếp tục"}
               />
             </div>
           </div>
@@ -403,7 +594,7 @@ export default function ServicesPage() {
               className="w-full h-12 text-base font-semibold"
               size="lg"
             >
-              Tiếp tục thanh toán
+              {isReceptionist ? "Xác nhận" : "Tiếp tục thanh toán"}
             </Button>
           </div>
         </>

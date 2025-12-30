@@ -14,9 +14,11 @@ interface ServiceSummaryCardProps {
   court: Court;
   courtType: CourtType;
   pricePerHour?: number;
+  totalCourtPrice?: number;
   services: ServiceItem[];
   coaches: Coach[];
   onContinue: () => void;
+  actionLabel?: string;
 }
 
 export function ServiceSummaryCard({
@@ -25,13 +27,18 @@ export function ServiceSummaryCard({
   court,
   courtType,
   pricePerHour = 50000,
+  totalCourtPrice,
   services,
   coaches,
   onContinue,
+  actionLabel = "Tiếp tục",
 }: ServiceSummaryCardProps) {
   const duration = courtType.slotDuration / 60; // hours per slot
   const totalSlots = timeSlots.length;
-  const courtPrice = pricePerHour * duration * totalSlots;
+  // Use provided total price or calculate
+  const courtPrice = totalCourtPrice !== undefined
+    ? totalCourtPrice
+    : pricePerHour * duration * totalSlots;
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("vi-VN", {
@@ -261,12 +268,15 @@ export function ServiceSummaryCard({
           className="w-full h-12 text-base font-semibold group"
           size="lg"
         >
-          Tiếp tục
+          {actionLabel}
           <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
         </Button>
 
         <p className="text-xs text-center text-muted-foreground">
-          Bấm "Tiếp tục" để xác nhận thanh toán
+          {actionLabel === "Tiếp tục"
+            ? 'Bấm "Tiếp tục" để xác nhận thanh toán'
+            : `Bấm "${actionLabel}" để hoàn tất phiếu dịch vụ`
+          }
         </p>
       </div>
     </Card>

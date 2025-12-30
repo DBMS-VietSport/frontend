@@ -102,6 +102,7 @@ export function makeBookingRow(
     timeRange: getTimeRange(booking.slots ?? []),
     paymentStatus: getPaymentStatus(booking.id, booking.status, invoices),
     courtStatus: booking.status as BookingStatus,
+    bookingDate: "booking_date" in booking ? (booking as any).booking_date : booking.created_at, // Handle potential missing property if type mismatch
     createdAt: booking.created_at,
   };
 }
@@ -170,7 +171,7 @@ export function makeBookingDetailView(
 }
 
 /**
- * Filter bookings by date (matches any slot within the booking)
+ * Filter bookings by date (when they want to play, not when booking was created)
  */
 export function filterByDate(
   rows: BookingRow[],
@@ -182,7 +183,7 @@ export function filterByDate(
   targetDate.setHours(0, 0, 0, 0);
 
   return rows.filter((row) => {
-    const bookingDate = new Date(row.createdAt);
+    const bookingDate = new Date(row.bookingDate); // Changed from createdAt to bookingDate
     bookingDate.setHours(0, 0, 0, 0);
     return bookingDate.getTime() === targetDate.getTime();
   });
@@ -191,15 +192,21 @@ export function filterByDate(
 /**
  * Filter bookings by court type
  */
+/**
+ * Filter bookings by court type
+ */
 export function filterByCourtType(
   rows: BookingRow[],
-  courtTypeId: number | null
+  courtTypeId: number | null,
+  courtTypes: any[] = [] // Should be CustomerCourtType[]
 ): BookingRow[] {
   if (!courtTypeId) return rows;
 
-  const courtTypeName = mockCourtTypes.find(
-    (ct: { id: number }) => ct.id === courtTypeId
+  // Find the name of the selected court type from the REAL list
+  const courtTypeName = courtTypes.find(
+    (ct) => ct.id === courtTypeId
   )?.name;
+
   if (!courtTypeName) return rows;
 
   return rows.filter((row) => row.courtType === courtTypeName);
@@ -245,7 +252,8 @@ export function applyFilters(
     courtTypeId?: number | null;
     paymentStatus?: PaymentStatusUI | null;
     searchText?: string;
-  }
+  },
+  courtTypes: any[] = [] // Added courtTypes argument
 ): BookingRow[] {
   let result = rows;
 
@@ -254,7 +262,7 @@ export function applyFilters(
   }
 
   if (filters.courtTypeId) {
-    result = filterByCourtType(result, filters.courtTypeId);
+    result = filterByCourtType(result, filters.courtTypeId, courtTypes);
   }
 
   if (filters.paymentStatus) {

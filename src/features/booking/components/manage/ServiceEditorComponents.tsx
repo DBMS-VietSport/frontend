@@ -6,18 +6,13 @@ import { Button } from "@/ui/button";
 import { Plus, Minus, Trash2 } from "lucide-react";
 import { formatVND } from "@/features/booking/utils/pricing";
 import type { ServiceItemEdit } from "./useServiceEditor";
-import { getServiceInfo } from "./useServiceEditor";
-
-// -----------------------------------------------------------------------------
-// TempServiceItemCard - Used in the Add Service Dialog
-// -----------------------------------------------------------------------------
-
 interface TempServiceItemCardProps {
   item: ServiceItemEdit;
   index: number;
   itemTotal: number;
   onQuantityChange: (index: number, delta: number) => void;
   onRemove: (index: number) => void;
+  getServiceInfo: (branchServiceId: number) => { branchService: any; service: any };
 }
 
 export function TempServiceItemCard({
@@ -26,9 +21,10 @@ export function TempServiceItemCard({
   itemTotal,
   onQuantityChange,
   onRemove,
+  getServiceInfo,
 }: TempServiceItemCardProps) {
   const { branchService, service } = getServiceInfo(item.branch_service_id);
-  
+
   if (!branchService || !service) return null;
 
   return (

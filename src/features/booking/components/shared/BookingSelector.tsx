@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Check, ChevronsUpDown, Calendar, Clock } from "lucide-react";
+import { Check, ChevronsUpDown, Calendar } from "lucide-react";
 import { cn } from "@/utils";
 import { Button } from "@/ui/button";
 import {
@@ -28,6 +28,7 @@ export interface CourtBookingOption {
   timeRange: string;
   status: "held" | "pending" | "confirmed" | "paid";
   totalAmount: number;
+  slots: any[]; // Raw slots from backend JSON
 }
 
 interface BookingSelectorProps {
@@ -147,10 +148,6 @@ export function BookingSelector({
                       <span className="flex items-center gap-1">
                         <Calendar className="h-3 w-3" />
                         {formatDate(booking.date)}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <Clock className="h-3 w-3" />
-                        {booking.timeRange}
                       </span>
                     </div>
                     <div className="text-xs">

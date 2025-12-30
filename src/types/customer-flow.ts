@@ -47,6 +47,8 @@ export interface CustomerCourt {
   type: string;
   facilityId: string;
   imageUrl: string;
+  baseHourlyPrice: number;
+  capacity?: number;
 }
 
 // -----------------------------------------------------------------------------
@@ -60,6 +62,7 @@ export interface TimeSlot {
   bookedBy?: string;
   phone?: string;
   email?: string;
+  price?: number;
   startISO?: string;
   endISO?: string;
 }
@@ -80,8 +83,8 @@ export interface BookingDetails {
 // Service Item Types
 // -----------------------------------------------------------------------------
 
-export type ServiceItemCategory = "equipment" | "coach" | "facility" | "drink";
-export type ServiceItemUnit = "hour" | "turn" | "free";
+export type ServiceItemCategory = "equipment" | "coach" | "facility" | "drink" | "Dịch vụ" | "Sản phẩm";
+export type ServiceItemUnit = "hour" | "turn" | "free" | "piece" | "set";
 
 export interface ServiceItem {
   id: string;
@@ -90,6 +93,8 @@ export interface ServiceItem {
   price: number;
   unit: ServiceItemUnit;
   quantity: number;
+  available?: number;
+  icon?: string;
   durationHours?: number;
   imageUrl?: string;
   description?: string;
@@ -106,6 +111,8 @@ export interface Coach {
   sport: string;
   pricePerHour: number;
   quantity: number;
+  rating?: number;
+  experience?: string;
   durationHours?: number;
   avatarUrl?: string;
   degree?: string;

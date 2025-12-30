@@ -22,7 +22,6 @@ import { mockEmployees } from "@/features/booking/mock/mockRepo";
 import { formatVND } from "@/features/booking/utils/pricing";
 import { StatusBadge } from "@/components/StatusBadge";
 import {
-  getServiceInfo,
   timeOptions,
   type ServiceItemEdit,
 } from "./useServiceEditor";
@@ -42,6 +41,7 @@ interface VoucherListProps {
   onQuantityChange: (index: number, delta: number) => void;
   onTimeChange: (index: number, field: "start_time" | "end_time", hours: number, minutes: number) => void;
   onItemChange: (index: number, field: keyof ServiceItemEdit, value: unknown) => void;
+  getServiceInfo: (branchServiceId: number) => { branchService: any; service: any };
 }
 
 export function VoucherList({
@@ -54,6 +54,7 @@ export function VoucherList({
   onQuantityChange,
   onTimeChange,
   onItemChange,
+  getServiceInfo,
 }: VoucherListProps) {
   return (
     <Accordion type="multiple" defaultValue={voucherIds.map(String)}>
@@ -79,6 +80,7 @@ export function VoucherList({
             onQuantityChange={onQuantityChange}
             onTimeChange={onTimeChange}
             onItemChange={onItemChange}
+            getServiceInfo={getServiceInfo}
           />
         );
       })}
@@ -101,6 +103,7 @@ interface VoucherAccordionItemProps {
   onQuantityChange: (index: number, delta: number) => void;
   onTimeChange: (index: number, field: "start_time" | "end_time", hours: number, minutes: number) => void;
   onItemChange: (index: number, field: keyof ServiceItemEdit, value: unknown) => void;
+  getServiceInfo: (branchServiceId: number) => { branchService: any; service: any };
 }
 
 function VoucherAccordionItem({
@@ -114,6 +117,7 @@ function VoucherAccordionItem({
   onQuantityChange,
   onTimeChange,
   onItemChange,
+  getServiceInfo,
 }: VoucherAccordionItemProps) {
   const isPaid = isVoucherPaid(voucherId);
   const isLocked = isVoucherLocked(voucherId);
@@ -160,6 +164,7 @@ function VoucherAccordionItem({
               onQuantityChange={onQuantityChange}
               onTimeChange={onTimeChange}
               onItemChange={onItemChange}
+              getServiceInfo={getServiceInfo}
             />
           ))}
 
@@ -191,6 +196,7 @@ interface VoucherServiceItemProps {
   onQuantityChange: (index: number, delta: number) => void;
   onTimeChange: (index: number, field: "start_time" | "end_time", hours: number, minutes: number) => void;
   onItemChange: (index: number, field: keyof ServiceItemEdit, value: unknown) => void;
+  getServiceInfo: (branchServiceId: number) => { branchService: any; service: any };
 }
 
 function VoucherServiceItem({
@@ -202,6 +208,7 @@ function VoucherServiceItem({
   onQuantityChange,
   onTimeChange,
   onItemChange,
+  getServiceInfo,
 }: VoucherServiceItemProps) {
   const { branchService, service } = getServiceInfo(item.branch_service_id);
   if (!branchService || !service) return null;
@@ -331,7 +338,7 @@ function VoucherServiceItem({
                 <div className="text-sm text-muted-foreground">
                   {item.trainer_ids?.[0]
                     ? mockEmployees.find((e) => e.id === item.trainer_ids?.[0])?.full_name ||
-                      "Không chỉ định"
+                    "Không chỉ định"
                     : "Không chỉ định"}
                 </div>
               ) : (

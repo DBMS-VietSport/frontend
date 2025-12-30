@@ -2,9 +2,8 @@
 
 import * as React from "react";
 import {
-  mockServices,
-  mockBranchServices,
-} from "@/features/booking/mock/mockRepo";
+  useBranchServices,
+} from "@/lib/api/use-bookings";
 import type { ServiceBookingItemDetail, Invoice } from "@/types";
 
 // -----------------------------------------------------------------------------
@@ -28,6 +27,19 @@ export interface UseServiceEditorProps {
   defaultEndTime: string;
   invoices?: Invoice[];
   onChange: (items: ServiceItemEdit[], removedIds: number[]) => void;
+}
+
+// Internal interface for BranchService from API (flat structure)
+interface BranchServiceItem {
+  id: number;
+  branch_id: number;
+  service_id: number;
+  unit_price: number;
+  is_active: boolean;
+  name: string; // From join
+  unit: string; // From join
+  description: string; // From join
+  image: string; // From join
 }
 
 // -----------------------------------------------------------------------------
@@ -60,18 +72,8 @@ export const generateTimeOptions = () => {
 export const timeOptions = generateTimeOptions();
 
 // -----------------------------------------------------------------------------
-// Service Info Helper
+// Helper (Inside Hook now)
 // -----------------------------------------------------------------------------
-
-export const getServiceInfo = (branchServiceId: number) => {
-  const branchService = mockBranchServices.find(
-    (bs) => bs.id === branchServiceId
-  );
-  const service = branchService
-    ? mockServices.find((s) => s.id === branchService.service_id)
-    : null;
-  return { branchService, service };
-};
 
 // -----------------------------------------------------------------------------
 // Custom Hook: useServiceEditor
@@ -93,8 +95,11 @@ export function useServiceEditor({
     ServiceItemEdit[]
   >([]);
 
-  const [items, setItems] = React.useState<ServiceItemEdit[]>(
-    initialItems.map((item) => ({
+  const [items, setItems] = React.useState<ServiceItemEdit[]>([]);
+
+  // Initialize items from props
+  React.useEffect(() => {
+    setItems(initialItems.map((item) => ({
       id: item.id,
       service_booking_id: item.service_booking_id,
       branch_service_id: item.branch_service_id,
@@ -102,36 +107,50 @@ export function useServiceEditor({
       start_time: item.start_time,
       end_time: item.end_time,
       trainer_ids: item.trainer_ids,
-    }))
-  );
-  
+    })));
+  }, [initialItems]);
+
   const [removedIds, setRemovedIds] = React.useState<number[]>([]);
   const [removedVoucherIds, setRemovedVoucherIds] = React.useState<number[]>([]);
   const [lockedVoucherIds, setLockedVoucherIds] = React.useState<number[]>([]);
   const [addServiceDialogOpen, setAddServiceDialogOpen] = React.useState(false);
   const [selectedBranchServiceId, setSelectedBranchServiceId] = React.useState<string>("");
 
-  // Get branch services for this branch
-  const availableBranchServices = React.useMemo(() => {
-    return mockBranchServices.filter((bs) => bs.branch_id === branchId);
-  }, [branchId]);
+  // Get branch services for this branch using real API
+  const { data: rawBranchServices = [], isLoading: isLoadingServices } = useBranchServices(branchId);
+
+  // Cast to our expected type
+  const branchServices = React.useMemo(() => rawBranchServices as unknown as BranchServiceItem[], [rawBranchServices]);
+
+  // Helper to get service info from real data
+  const getServiceInfo = React.useCallback((branchServiceId: number) => {
+    const branchService = branchServices.find((bs) => bs.id === branchServiceId);
+    // Flattened structure - service info is on the branchService object itself from SP
+    const service = branchService ? {
+      name: branchService.name,
+      unit: branchService.unit,
+      id: branchService.service_id
+    } : null;
+    return { branchService, service };
+  }, [branchServices]);
 
   // Get services that are not yet added (in current voucher being created)
   const availableServicesToAdd = React.useMemo(() => {
+    if (!branchServices) return [];
     const addedBranchServiceIds = new Set(
       tempVoucherItems.map((item) => item.branch_service_id)
     );
-    return availableBranchServices.filter(
+    return branchServices.filter(
       (bs) => !addedBranchServiceIds.has(bs.id)
     );
-  }, [availableBranchServices, tempVoucherItems]);
+  }, [branchServices, tempVoucherItems]);
 
   // Check if a voucher is paid (locked)
   const isVoucherPaid = React.useCallback(
     (voucherId: number): boolean => {
       if (voucherId <= 0) return false;
       return invoices.some(
-        (inv) => inv.service_booking_id === voucherId && inv.status === "Paid"
+        (inv) => inv.service_booking_id === voucherId && (inv.status === "Paid" || inv.status === "Đã thanh toán")
       );
     },
     [invoices]
@@ -181,7 +200,7 @@ export function useServiceEditor({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [items, removedIds, removedVoucherIds]);
 
-  // Calculate item total
+  // Calculate item total using local getServiceInfo
   const calculateItemTotal = React.useCallback((item: ServiceItemEdit): number => {
     const { branchService, service } = getServiceInfo(item.branch_service_id);
     if (!branchService || !service) return 0;
@@ -194,7 +213,7 @@ export function useServiceEditor({
     }
 
     return branchService.unit_price * item.quantity;
-  }, []);
+  }, [getServiceInfo]);
 
   // Handlers
   const handleAddItemToTempVoucher = React.useCallback(() => {
@@ -341,20 +360,20 @@ export function useServiceEditor({
     removedIds,
     addServiceDialogOpen,
     selectedBranchServiceId,
-    availableBranchServices,
+    availableBranchServices: branchServices || [],
     availableServicesToAdd,
     itemsByVoucher,
     voucherIds,
     hasItems,
-    
+
     // Setters
     setSelectedBranchServiceId,
-    
+
     // Computed
     isVoucherPaid,
     isVoucherLocked,
     calculateItemTotal,
-    
+
     // Handlers
     handleAddItemToTempVoucher,
     handleRemoveItemFromTempVoucher,
@@ -367,5 +386,8 @@ export function useServiceEditor({
     handleQuantityChange,
     handleTimeChange,
     handleDialogOpenChange,
+
+    // Helpers
+    getServiceInfo,
   };
 }

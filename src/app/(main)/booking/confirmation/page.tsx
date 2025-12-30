@@ -15,6 +15,7 @@ import { BookingInfoCard } from "@/features/booking/components/confirmation/Book
 import { BookingPaymentSummaryCard } from "@/features/booking/components/confirmation/BookingPaymentSummaryCard";
 import { BookingServicesCard } from "@/features/booking/components/confirmation/BookingServicesCard";
 import { Separator } from "@/ui/separator";
+import { isCustomer } from "@/lib/role-labels";
 
 function formatCurrencyVND(amount: number) {
   return new Intl.NumberFormat("vi-VN", {
@@ -105,7 +106,7 @@ export default function BookingConfirmationPage() {
           className="w-full sm:w-auto"
           onClick={() =>
             router.push(
-              user?.role === "customer" ? "/dashboard" : "/booking/manage"
+              isCustomer(user) ? "/dashboard" : "/booking/manage"
             )
           }
         >
