@@ -21,7 +21,7 @@ import type {
   ServiceDetail,
   ServiceRentalType,
   ServiceUnit,
-  ServiceStatus,
+  BranchServiceStatus,
   UpdateServicePayload,
   UpdateBranchServicePayload,
 } from "@/features/services/types";
@@ -62,7 +62,7 @@ export default function ServiceDetailPage({
     unit_price: 0,
     current_stock: 0,
     min_stock_threshold: 10,
-    status: "Available" as ServiceStatus,
+    status: "Còn" as BranchServiceStatus,
   });
 
   React.useEffect(() => {
@@ -78,7 +78,7 @@ export default function ServiceDetailPage({
         unit_price: serviceDetail.branchService.unit_price,
         current_stock: serviceDetail.branchService.current_stock ?? 0,
         min_stock_threshold: serviceDetail.branchService.min_stock_threshold ?? 10,
-        status: serviceDetail.branchService.status ?? "Available",
+        status: serviceDetail.branchService.status ?? "Còn",
       });
     }
   }, [serviceDetail]);
@@ -88,7 +88,7 @@ export default function ServiceDetailPage({
     try {
       const data = await serviceRepo.getServiceById(serviceId);
       if (data) {
-        setServiceDetail(data);
+        setServiceDetail(data as ServiceDetail);
       } else {
         toast.error("Không tìm thấy dịch vụ");
         router.push("/services");
@@ -285,7 +285,7 @@ export default function ServiceDetailPage({
                           current_stock: branchService.current_stock ?? 0,
                           min_stock_threshold:
                             branchService.min_stock_threshold ?? 10,
-                          status: branchService.status ?? "Available",
+                          status: branchService.status ?? "Còn",
                         });
                       }}
                       disabled={isSaving}
@@ -397,7 +397,7 @@ export default function ServiceDetailPage({
                       onValueChange={(value: string) =>
                         setFormData({
                           ...formData,
-                          status: value as ServiceStatus,
+                          status: value as BranchServiceStatus,
                         })
                       }
                     >
@@ -405,10 +405,8 @@ export default function ServiceDetailPage({
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="Available">Hoạt động</SelectItem>
-                        <SelectItem value="Unavailable">
-                          Không hoạt động
-                        </SelectItem>
+                        <SelectItem value="Còn">Còn hàng</SelectItem>
+                        <SelectItem value="Hết">Hết hàng</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -429,7 +427,7 @@ export default function ServiceDetailPage({
                           current_stock: branchService.current_stock ?? 0,
                           min_stock_threshold:
                             branchService.min_stock_threshold ?? 10,
-                          status: branchService.status ?? "Available",
+                          status: branchService.status ?? "Còn",
                         });
                       }}
                       disabled={isSaving}
@@ -498,17 +496,17 @@ export default function ServiceDetailPage({
                     <p className="mt-1">
                       <Badge
                         variant={
-                          branchService.status === "Available"
+                          branchService.status === "Còn"
                             ? "default"
                             : "secondary"
                         }
                         className={
-                          branchService.status === "Available"
+                          branchService.status === "Còn"
                             ? "bg-green-500 hover:bg-green-600"
                             : ""
                         }
                       >
-                        {branchService.status === "Available"
+                        {branchService.status === "Còn"
                           ? "Hoạt động"
                           : "Không hoạt động"}
                       </Badge>

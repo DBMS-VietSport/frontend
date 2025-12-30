@@ -250,7 +250,7 @@ let mockCourtBookings: CourtBooking[] = [
   {
     id: 2,
     created_at: "2025-11-01T14:30:00+07:00",
-    type: "Direct",
+    type: "Trực tiếp",
     status: "Held",
     customer_id: 2,
     employee_id: 2,
@@ -270,7 +270,7 @@ let mockCourtBookings: CourtBooking[] = [
   {
     id: 4,
     created_at: "2025-10-31T12:00:00+07:00",
-    type: "Direct",
+    type: "Trực tiếp",
     status: "Paid",
     customer_id: 4,
     employee_id: 1,
@@ -396,7 +396,7 @@ function generateRandomBookings(count: number): {
 
   const statuses: Array<"Paid" | "Held" | "Booked" | "Cancelled" | "Pending"> =
     ["Paid", "Held", "Booked", "Cancelled", "Pending"];
-  const types: Array<"Online" | "Direct"> = ["Online", "Direct"];
+  const types: Array<"Online" | "Trực tiếp"> = ["Online", "Trực tiếp"];
   const paymentMethods = ["Bank Transfer", "Counter", "Cash", "Credit Card"];
 
   const now = new Date();
@@ -413,7 +413,7 @@ function generateRandomBookings(count: number): {
       mockCustomers[Math.floor(Math.random() * mockCustomers.length)];
     const court = mockCourts[Math.floor(Math.random() * mockCourts.length)];
     const employee =
-      type === "Direct" && Math.random() > 0.3
+      type === "Trực tiếp" && Math.random() > 0.3
         ? mockEmployees[Math.floor(Math.random() * mockEmployees.length)]
         : null;
 

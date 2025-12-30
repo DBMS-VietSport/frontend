@@ -51,6 +51,7 @@ export const MOCK_COURT_BOOKINGS: CourtBookingOption[] = [
     timeRange: "08:00 - 10:00",
     status: "held",
     totalAmount: 100000,
+    slots: [],
   },
   {
     id: "BK-002",
@@ -61,6 +62,7 @@ export const MOCK_COURT_BOOKINGS: CourtBookingOption[] = [
     timeRange: "14:00 - 16:00",
     status: "pending",
     totalAmount: 200000,
+    slots: [],
   },
   {
     id: "BK-003",
@@ -71,6 +73,7 @@ export const MOCK_COURT_BOOKINGS: CourtBookingOption[] = [
     timeRange: "16:00 - 18:00",
     status: "confirmed",
     totalAmount: 300000,
+    slots: [],
   },
   {
     id: "BK-004",
@@ -81,6 +84,7 @@ export const MOCK_COURT_BOOKINGS: CourtBookingOption[] = [
     timeRange: "09:00 - 11:00",
     status: "paid",
     totalAmount: 100000,
+    slots: [],
   },
 ];
 

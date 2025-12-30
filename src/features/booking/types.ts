@@ -9,6 +9,7 @@ export type {
   CustomerCourt,
   TimeSlot,
   ServiceItem,
+  ServiceItemUnit,
   Coach,
 } from "@/types/customer-flow";
 

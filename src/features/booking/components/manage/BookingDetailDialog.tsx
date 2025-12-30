@@ -31,13 +31,13 @@ export function BookingDetailDialog({
   if (!booking) return null;
 
   const statusBadgeClass =
-    booking.courtStatus === "Paid"
+    booking.courtStatus === "Đã thanh toán"
       ? "bg-green-500"
-      : booking.courtStatus === "Held"
+      : booking.courtStatus === "Đang giữ chỗ"
       ? "bg-blue-500"
-      : booking.courtStatus === "Booked"
+      : booking.courtStatus === "Chưa thanh toán"
       ? "bg-yellow-500"
-      : booking.courtStatus === "Cancelled"
+      : booking.courtStatus === "Đã hủy"
       ? "bg-red-500"
       : "";
 

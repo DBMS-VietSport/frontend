@@ -23,6 +23,7 @@ import type {
   ServiceRentalType,
   ServiceUnit,
   ServiceStatus,
+  BranchServiceStatus,
 } from "@/features/services/types";
 import { branches } from "@/mock";
 import { logger } from "@/utils/logger";
@@ -56,7 +57,7 @@ export function ServiceFormDialog({
     unit_price: 0,
     current_stock: 0,
     min_stock_threshold: 10,
-    status: "Available",
+    status: "Còn",
   });
   const [isSaving, setIsSaving] = React.useState(false);
 
@@ -71,7 +72,7 @@ export function ServiceFormDialog({
         unit_price: 0,
         current_stock: 0,
         min_stock_threshold: 10,
-        status: "Available",
+        status: "Còn",
       });
     }
   }, [open]);
@@ -266,14 +267,14 @@ export function ServiceFormDialog({
             <Select
               value={formData.status}
               onValueChange={(value) =>
-                setFormData({ ...formData, status: value as ServiceStatus })
+                setFormData({ ...formData, status: value as BranchServiceStatus })
               }
             >
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="Available">Hoạt động</SelectItem>
+                <SelectItem value="Còn">Hoạt động</SelectItem>
                 <SelectItem value="Unavailable">Không hoạt động</SelectItem>
               </SelectContent>
             </Select>

@@ -227,7 +227,7 @@ export default function CourtUsageReportPage() {
     number | null
   >(null);
   const [bookingMethod, setBookingMethod] = React.useState<
-    "All" | "Online" | "Direct"
+    "All" | "Online" | "Trực tiếp"
   >("All");
   const [bookingStatus, setBookingStatus] = React.useState<
     "All" | "Paid" | "Held" | "Cancelled" | "NoShow"
@@ -405,7 +405,7 @@ export default function CourtUsageReportPage() {
               <SelectContent>
                 <SelectItem value="All">Tất cả</SelectItem>
                 <SelectItem value="Online">Online</SelectItem>
-                <SelectItem value="Direct">Tại quầy (Direct)</SelectItem>
+                <SelectItem value="Trực tiếp">Tại quầy (Trực tiếp)</SelectItem>
               </SelectContent>
             </Select>
           </div>

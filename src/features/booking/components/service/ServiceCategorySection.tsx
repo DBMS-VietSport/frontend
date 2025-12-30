@@ -4,7 +4,7 @@ import * as React from "react";
 import { Card, CardContent } from "@/ui/card";
 import { Button } from "@/ui/button";
 import { Minus, Plus, ImageIcon } from "lucide-react";
-import type { ServiceItem } from "@/features/booking/types";
+import type { ServiceItem, ServiceItemUnit } from "@/features/booking/types";
 import { HourBasedEquipmentCard } from "./HourBasedEquipmentCard";
 
 interface ServiceCategorySectionProps {
@@ -30,7 +30,7 @@ export function ServiceCategorySection({
     }).format(amount);
   };
 
-  const getUnitText = (unit: "hour" | "turn" | "free", category?: string) => {
+  const getUnitText = (unit: ServiceItemUnit, category?: string) => {
     if (category === "drink") {
       return "chai";
     }
@@ -39,6 +39,10 @@ export function ServiceCategorySection({
         return "giờ";
       case "turn":
         return "lượt";
+      case "piece":
+        return "cái";
+      case "set":
+        return "bộ";
       case "free":
         return "";
       default:

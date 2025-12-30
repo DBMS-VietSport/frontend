@@ -1,41 +1,14 @@
-import { serviceRepo, branches } from "@/mock";
-import type { Service, BranchService } from "@/types";
+/**
+ * Services Mock Repository - Convenience exports
+ * Re-exports service repository functions for easier importing
+ */
 
-// Backward-compatible service mockRepo that proxies to the centralized lib/mock/serviceRepo
+import { serviceRepo } from "./serviceRepo";
 
-export const mockBranches = branches;
-
-export async function listServices(branchId?: number) {
-  return serviceRepo.listServices(branchId);
-}
-
-export async function getServiceById(serviceId: number, branchId?: number) {
-  return serviceRepo.getServiceById(serviceId, branchId);
-}
-
-export async function createService(payload: {
-  name: string;
-  unit: Service["unit"];
-  rental_type: Service["rental_type"];
-  branch_id: number;
-  unit_price: number;
-  current_stock: number;
-  min_stock_threshold: number;
-  status: BranchService["status"];
-}) {
-  return serviceRepo.createService(payload);
-}
-
-export async function updateService(
-  serviceId: number,
-  payload: Partial<Service>
-) {
-  return serviceRepo.updateService(serviceId, payload);
-}
-
-export async function updateBranchService(
-  branchServiceId: number,
-  payload: Partial<BranchService>
-) {
-  return serviceRepo.updateBranchService(branchServiceId, payload);
-}
+export const {
+  listServices,
+  getServiceById,
+  createService,
+  updateService,
+  updateBranchService,
+} = serviceRepo;

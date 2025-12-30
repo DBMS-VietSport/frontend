@@ -46,7 +46,7 @@ function generateMockReportData() {
         Math.random() * (endDate.getTime() - startDate.getTime())
     );
     const court = courts[Math.floor(Math.random() * courts.length)];
-    const type = Math.random() > 0.4 ? "Online" : "Direct";
+    const type = Math.random() > 0.4 ? "Online" : "Trực tiếp";
 
     // Status distribution
     const randStatus = Math.random();
@@ -64,10 +64,10 @@ function generateMockReportData() {
     bookings.push({
       id: bookingId,
       created_at: bookingDate.toISOString(),
-      type: type as "Online" | "Direct",
+      type: type as "Online" | "Trực tiếp",
       status: finalStatus,
       customer_id: Math.floor(Math.random() * 10) + 1,
-      employee_id: type === "Direct" ? Math.floor(Math.random() * 5) + 1 : null,
+      employee_id: type === "Trực tiếp" ? Math.floor(Math.random() * 5) + 1 : null,
       court_id: court.id,
     });
 
@@ -113,7 +113,7 @@ export interface CourtReportFilter {
   dateRange: { from: Date; to: Date } | undefined;
   branchIds: number[];
   courtTypeId: number | null;
-  bookingMethod: "All" | "Online" | "Direct";
+  bookingMethod: "All" | "Online" | "Trực tiếp";
   bookingStatus: "All" | "Paid" | "Held" | "Cancelled" | "NoShow";
 }
 
@@ -228,7 +228,7 @@ export function getReportKPIs(filter: CourtReportFilter) {
     (b) => b.type === "Online"
   ).length;
   const directCount = filteredBookings.filter(
-    (b) => b.type === "Direct"
+    (b) => b.type === "Trực tiếp"
   ).length;
 
   const cancelledCount = filteredBookings.filter(

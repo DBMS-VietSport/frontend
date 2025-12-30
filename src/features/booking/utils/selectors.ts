@@ -39,7 +39,7 @@ export function getPaymentStatus(
   invoices: Invoice[]
 ): PaymentStatusUI {
   if (bookingStatus === "Cancelled") {
-    return "Đã hủy";
+    return "Chưa thanh toán";
   }
 
   const hasPaidInvoice = invoices.some(

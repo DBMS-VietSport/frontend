@@ -122,17 +122,17 @@ export function ServiceTable({
                     <TableCell className="text-center">
                       <Badge
                         variant={
-                          service.status === "Available"
+                          service.status === "Còn"
                             ? "default"
                             : "secondary"
                         }
                         className={
-                          service.status === "Available"
+                          service.status === "Còn"
                             ? "bg-green-500 hover:bg-green-600"
                             : ""
                         }
                       >
-                        {service.status === "Available"
+                        {service.status === "Còn"
                           ? "Hoạt động"
                           : "Không hoạt động"}
                       </Badge>

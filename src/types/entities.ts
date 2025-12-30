@@ -11,6 +11,7 @@
 
 export type CourtStatus = "Sẵn sàng" | "Bảo trì";
 export type BookingStatus = "Đã thanh toán" | "Chưa thanh toán" | "Đã hủy" | "Đang giữ chỗ";
+export type PaymentStatusUI = "Đã thanh toán" | "Chưa thanh toán" | "Đang xử lý";
 export type BookingType = "Online" | "Trực tiếp";
 export type ServiceUnit = "Cái" | "Người" | "Phòng" | "Chai" | "Giờ" | "Lượt" | "Tháng" | "Trận";
 export type ServiceRentalType = "Theo giờ" | "Theo lần";

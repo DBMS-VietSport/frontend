@@ -382,23 +382,31 @@ function CourtSelector({ courtId, tempCourtId, availableCourts, onChange }: Cour
     <div className="space-y-2">
       <Label>Chọn sân (tùy chọn)</Label>
       <Select
-        value={tempCourtId?.toString() || courtId.toString()}
+        value={availableCourts.length === 0 ? "no-courts" : (tempCourtId?.toString() || courtId.toString())}
         onValueChange={onChange}
       >
         <SelectTrigger className="h-10 text-base">
-          <SelectValue placeholder="Chọn sân" />
+          <SelectValue placeholder={availableCourts.length === 0 ? "Không có sân nào khả dụng" : "Chọn sân"} />
         </SelectTrigger>
         <SelectContent>
-          {availableCourts.map((court) => (
-            <SelectItem key={court.id} value={court.id.toString()}>
-              {court.name || `Sân ${court.id}`} - {court.base_hourly_price.toLocaleString()} VNĐ/giờ
-              {court.id === courtId && " (Sân hiện tại)"}
+          {availableCourts.length === 0 ? (
+            <SelectItem value="no-courts" disabled>
+              Không có sân nào khả dụng
             </SelectItem>
-          ))}
+          ) : (
+            availableCourts.map((court) => (
+              <SelectItem key={court.id} value={court.id.toString()}>
+                {court.name || `Sân ${court.id}`} - {court.base_hourly_price.toLocaleString()} VNĐ/giờ
+                {court.id === courtId && " (Sân hiện tại)"}
+              </SelectItem>
+            ))
+          )}
         </SelectContent>
       </Select>
       <p className="text-xs text-muted-foreground">
-        {tempCourtId && tempCourtId !== courtId
+        {availableCourts.length === 0
+          ? "Không có sân nào khả dụng để chọn."
+          : tempCourtId && tempCourtId !== courtId
           ? "Đã chọn sân mới. Vui lòng chọn các khung giờ trống cho sân mới."
           : "Có thể giữ nguyên sân hiện tại hoặc chọn sân mới."}
       </p>

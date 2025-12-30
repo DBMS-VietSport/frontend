@@ -9,13 +9,20 @@ export interface LoginRequest {
   password: string;
 }
 
+export interface AuthUser {
+  id: string;
+  username: string;
+  role: string;
+  fullName?: string;
+  branchId?: number;
+  branchName?: string;
+  customerId?: number;
+  employeeId?: number;
+}
+
 export interface LoginResponse {
-  token: string;
-  user: {
-    id: string;
-    username: string;
-    role: string;
-  };
+  access_token: string;
+  user: AuthUser;
 }
 
 export interface RegisterRequest {

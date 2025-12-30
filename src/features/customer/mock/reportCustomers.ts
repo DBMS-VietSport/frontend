@@ -103,7 +103,7 @@ function generateMockCustomerReportData() {
     bookings.push({
       id: bookingId,
       created_at: bookingDate.toISOString(),
-      type: Math.random() > 0.5 ? "Online" : "Direct",
+      type: Math.random() > 0.5 ? "Online" : "Trực tiếp",
       status: "Paid",
       customer_id: customer.id,
       employee_id: null,

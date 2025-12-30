@@ -1,9 +1,14 @@
 // Data types for service management
 // Based on create_db.sql [service] and [branch_service] schemas
 
+import type { BranchServiceStatus } from "@/types";
+
 export type ServiceRentalType = "Dụng cụ" | "Nhân sự" | "Tiện ích";
 export type ServiceUnit = "Lần" | "Giờ" | "Trận" | "Tháng" | "Lượt" | "Chai";
 export type ServiceStatus = "Available" | "Unavailable";
+
+// Re-export for convenience
+export type { BranchServiceStatus };
 
 export interface Service {
   id: number;
@@ -19,7 +24,7 @@ export interface BranchService {
   unit_price: number;
   current_stock?: number;
   min_stock_threshold?: number;
-  status?: ServiceStatus;
+  status?: BranchServiceStatus;
 }
 
 // UI projection for table display
@@ -32,7 +37,7 @@ export interface ServiceRow {
   unit_price: number;
   current_stock?: number;
   min_stock_threshold?: number;
-  status?: ServiceStatus;
+  status?: BranchServiceStatus;
   branch_id: number;
   branch_name: string;
 }
@@ -53,7 +58,7 @@ export interface CreateServicePayload {
   unit_price: number;
   current_stock: number;
   min_stock_threshold: number;
-  status: ServiceStatus;
+  status: BranchServiceStatus;
 }
 
 export interface UpdateServicePayload {
@@ -63,12 +68,12 @@ export interface UpdateServicePayload {
   unit_price?: number;
   current_stock?: number;
   min_stock_threshold?: number;
-  status?: ServiceStatus;
+  status?: BranchServiceStatus;
 }
 
 export interface UpdateBranchServicePayload {
   unit_price?: number;
   current_stock?: number;
   min_stock_threshold?: number;
-  status?: ServiceStatus;
+  status?: BranchServiceStatus;
 }

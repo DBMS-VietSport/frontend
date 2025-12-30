@@ -1,20 +1,6 @@
 import { services, branchServices, branches } from "../../../mock/data";
-import type { Service, BranchService } from "../../../mock/types";
+import type { Service, BranchService, ServiceRow } from "../types";
 import { nextId } from "../../../mock/id-utils";
-
-export interface ServiceRow {
-  id: number;
-  branch_service_id: number;
-  name: string;
-  rental_type: Service["rental_type"];
-  unit: Service["unit"];
-  unit_price: number;
-  current_stock?: number;
-  min_stock_threshold?: number;
-  status?: BranchService["status"];
-  branch_id: number;
-  branch_name: string;
-}
 
 export const serviceRepo = {
   listServices: async (branchId?: number): Promise<ServiceRow[]> => {
@@ -28,8 +14,8 @@ export const serviceRepo = {
         id: s.id,
         branch_service_id: bs.id,
         name: s.name,
-        rental_type: s.rental_type,
-        unit: s.unit,
+        rental_type: s.rental_type as Service["rental_type"],
+        unit: s.unit as Service["unit"],
         unit_price: bs.unit_price,
         current_stock: bs.current_stock,
         min_stock_threshold: bs.min_stock_threshold,
@@ -57,7 +43,11 @@ export const serviceRepo = {
       : branchServices.find((x) => x.service_id === serviceId);
     if (!bs) return null;
     const b = branches.find((x) => x.id === bs.branch_id);
-    return { service: s, branchService: bs, branch_name: b?.name || "" };
+    return { 
+      service: s as Service, 
+      branchService: bs, 
+      branch_name: b?.name || "" 
+    };
   },
   createService: async (payload: {
     name: string;
@@ -110,7 +100,7 @@ export const serviceRepo = {
     const sIdx = services.findIndex((x) => x.id === serviceId);
     if (sIdx === -1) return null;
     services[sIdx] = { ...services[sIdx], ...payload };
-    return services[sIdx];
+    return services[sIdx] as Service;
   },
   updateBranchService: async (
     branchServiceId: number,

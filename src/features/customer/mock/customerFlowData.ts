@@ -53,13 +53,13 @@ export const mockCustomerCourtTypes: CustomerCourtType[] = [
 ];
 
 export const mockCustomerCourts: CustomerCourt[] = [
-  { id: "1", name: "Sân 1", type: "badminton", facilityId: "1", imageUrl: "/badminton-court.jpg" },
-  { id: "2", name: "Sân 2", type: "badminton", facilityId: "1", imageUrl: "/badminton-court.jpg" },
-  { id: "3", name: "Sân 3", type: "badminton", facilityId: "1", imageUrl: "/badminton-court.jpg" },
-  { id: "4", name: "Sân Tennis 1", type: "tennis", facilityId: "1", imageUrl: "/tennis-court.jpg" },
-  { id: "5", name: "Sân Tennis 2", type: "tennis", facilityId: "1", imageUrl: "/tennis-court.jpg" },
-  { id: "6", name: "Sân Bóng Đá 1", type: "football", facilityId: "1", imageUrl: "/soccer-sourt.jpg" },
-  { id: "7", name: "Sân Bóng Rổ 1", type: "basketball", facilityId: "1", imageUrl: "/basketball-court.jpg" },
+  { id: "1", name: "Sân 1", type: "badminton", facilityId: "1", imageUrl: "/badminton-court.jpg", baseHourlyPrice: 150000 },
+  { id: "2", name: "Sân 2", type: "badminton", facilityId: "1", imageUrl: "/badminton-court.jpg", baseHourlyPrice: 150000 },
+  { id: "3", name: "Sân 3", type: "badminton", facilityId: "1", imageUrl: "/badminton-court.jpg", baseHourlyPrice: 150000 },
+  { id: "4", name: "Sân Tennis 1", type: "tennis", facilityId: "1", imageUrl: "/tennis-court.jpg", baseHourlyPrice: 250000 },
+  { id: "5", name: "Sân Tennis 2", type: "tennis", facilityId: "1", imageUrl: "/tennis-court.jpg", baseHourlyPrice: 250000 },
+  { id: "6", name: "Sân Bóng Đá 1", type: "football", facilityId: "1", imageUrl: "/soccer-court.jpg", baseHourlyPrice: 300000 },
+  { id: "7", name: "Sân Bóng Rổ 1", type: "basketball", facilityId: "1", imageUrl: "/basketball-court.jpg", baseHourlyPrice: 200000 },
 ];
 
 // -----------------------------------------------------------------------------

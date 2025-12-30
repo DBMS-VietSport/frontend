@@ -30,6 +30,7 @@ import type {
   ServiceStatus,
   UpdateServicePayload,
   UpdateBranchServicePayload,
+  BranchServiceStatus,
 } from "@/features/services/types";
 import { isLowStock, formatPrice } from "@/features/services/selectors";
 import { logger } from "@/utils/logger";
@@ -72,7 +73,7 @@ export function ServiceDetailDialog({
     unit_price: 0,
     current_stock: 0,
     min_stock_threshold: 10,
-    status: "Available" as ServiceStatus,
+    status: "Còn",
   });
 
   // Initialize form data when service changes
@@ -85,7 +86,7 @@ export function ServiceDetailDialog({
         unit_price: service.unit_price,
         current_stock: service.current_stock ?? 0,
         min_stock_threshold: service.min_stock_threshold ?? 10,
-        status: service.status ?? "Available",
+        status: service.status ?? "Còn",
       });
       setIsEditing(false);
     }
@@ -108,7 +109,7 @@ export function ServiceDetailDialog({
         unit_price: formData.unit_price,
         current_stock: formData.current_stock,
         min_stock_threshold: formData.min_stock_threshold,
-        status: formData.status,
+        status: formData.status as BranchServiceStatus,
       };
 
       await onSave(
@@ -240,7 +241,7 @@ export function ServiceDetailDialog({
                               unit_price: service.unit_price,
                               current_stock: service.current_stock ?? 0,
                               min_stock_threshold: service.min_stock_threshold ?? 10,
-                              status: service.status ?? "Available",
+                              status: service.status ?? "Còn",
                             });
                           }
                         }}
@@ -371,7 +372,7 @@ export function ServiceDetailDialog({
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="Available">Hoạt động</SelectItem>
+                          <SelectItem value="Còn">Hoạt động</SelectItem>
                           <SelectItem value="Unavailable">
                             Không hoạt động
                           </SelectItem>
@@ -395,7 +396,7 @@ export function ServiceDetailDialog({
                               unit_price: service.unit_price,
                               current_stock: service.current_stock ?? 0,
                               min_stock_threshold: service.min_stock_threshold ?? 10,
-                              status: service.status ?? "Available",
+                              status: service.status ?? "Còn",
                             });
                           }
                         }}
@@ -467,17 +468,17 @@ export function ServiceDetailDialog({
                       <p className="mt-1">
                         <Badge
                           variant={
-                            service.status === "Available"
+                            service.status === "Còn"
                               ? "default"
                               : "secondary"
                           }
                           className={
-                            service.status === "Available"
+                            service.status === "Còn"
                               ? "bg-green-500 hover:bg-green-600"
                               : ""
                           }
                         >
-                          {service.status === "Available"
+                          {service.status === "Còn"
                             ? "Hoạt động"
                             : "Không hoạt động"}
                         </Badge>

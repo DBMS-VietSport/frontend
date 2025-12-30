@@ -84,13 +84,13 @@ function generateMockRevenueReportData() {
     const dateIso = date.toISOString();
 
     const court = courts[Math.floor(Math.random() * courts.length)];
-    const type = Math.random() > 0.3 ? "Direct" : "Online"; // 70% direct
+    const type = Math.random() > 0.3 ? "Trực tiếp" : "Online"; // 70% direct
 
     const bookingId = bookIdCounter++;
     const booking: CourtBooking = {
       id: bookingId,
       created_at: dateIso,
-      type: type as "Direct" | "Online",
+      type: type as "Trực tiếp" | "Online",
       status: "Paid", // default
       customer_id: 1, // dummy
       employee_id: 1, // dummy

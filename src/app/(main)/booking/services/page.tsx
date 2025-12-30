@@ -31,7 +31,7 @@ import {
 import { Card, CardContent } from "@/ui/card";
 import { Label } from "@/ui/label";
 import { ROLES } from "@/lib/role-labels";
-import { useCustomers, useCourtBookings, useBranchServices, useEmployees, useCustomerCourtBookings, useAvailableTrainers } from "@/lib/api";
+import { useCustomers, useCourtBookings, useBranchServices, useEmployees, useCustomerCourtBookings, useAvailableTrainers, useCreateServiceBooking } from "@/lib/api";
 import { toast } from "sonner";
 import { setLastBooking } from "@/features/booking/mock/bookingFlowStore";
 
@@ -54,6 +54,9 @@ export default function ServicesPage() {
 
   const isReceptionist = user?.role === ROLES.RECEPTIONIST || user?.role?.toLowerCase() === "receptionist";
   const branchId = user?.branchId || 1;
+
+  // Mutation for creating service booking
+  const createServiceBookingMutation = useCreateServiceBooking();
 
   // Get bookingId and customerId from query params (for edit flow)
   const bookingIdFromQuery = searchParams.get("bookingId");
@@ -99,7 +102,7 @@ export default function ServicesPage() {
     return (customerBookingsData as any[]).map((b: any) => {
       let status: "held" | "pending" | "confirmed" | "paid" = "pending";
       const bStatus = b.status?.toLowerCase();
-      if (bStatus?.includes("thanh toán") || bStatus === "paid") status = "paid";
+      if (bStatus?.includes("đã thanh toán") || bStatus === "paid") status = "paid";
       else if (bStatus?.includes("xác nhận")) status = "confirmed";
       else if (bStatus?.includes("giữ")) status = "held";
 
@@ -361,94 +364,193 @@ export default function ServicesPage() {
     [setSelectedCourtBookingId, availBookings]
   );
 
-  const handleContinue = React.useCallback(() => {
+  const handleContinue = React.useCallback(async () => {
     if (!localBookingId) {
       alert("Vui lòng chọn phiếu đặt sân");
       return;
     }
 
-    // Calculate total service fee
-    let totalServiceFee = 0;
-    activeServices.forEach((service) => {
-      if (service.quantity > 0 && service.unit !== "free") {
-        if (service.unit === "hour") {
-          totalServiceFee +=
-            service.price * service.quantity * (service.durationHours || 1);
-        } else {
-          totalServiceFee += service.price * service.quantity;
-        }
-      }
-    });
+    // Get booking data for slots
+    const selectedBooking = availBookings.find((b) => b.id === localBookingId);
+    if (!selectedBooking) {
+      alert("Không tìm thấy thông tin đặt sân");
+      return;
+    }
 
-    activeCoaches.forEach((coach) => {
-      if (coach.quantity > 0) {
-        totalServiceFee +=
-          coach.pricePerHour * coach.quantity * (coach.durationHours || 1);
+    // Parse slots to get start and end time
+    let startTime = "";
+    let endTime = "";
+    try {
+      const parsedSlots = typeof selectedBooking.slots === "string" ? JSON.parse(selectedBooking.slots) : selectedBooking.slots;
+      if (Array.isArray(parsedSlots) && parsedSlots.length > 0) {
+        startTime = parsedSlots[0].start_time;
+        endTime = parsedSlots[parsedSlots.length - 1].end_time;
       }
-    });
+    } catch (e) {
+      console.error("Error parsing slots:", e);
+    }
 
-    // Save service booking to store
-    const serviceBookingId = `SB-${Date.now()}`;
-    setServiceBooking({
-      id: serviceBookingId,
-      courtBookingId: localBookingId,
-      services: activeServices
+    if (!startTime || !endTime) {
+      alert("Không thể lấy thông tin thời gian đặt sân");
+      return;
+    }
+
+    // Find trainer branch service id
+    const trainerBranchService = branchServicesData.find((bs: any) => 
+      bs.service?.name?.toLowerCase().includes("huấn luyện") || 
+      bs.service?.name?.toLowerCase().includes("trainer")
+    );
+    const trainerBranchServiceId = trainerBranchService ? trainerBranchService.id : 1; // fallback
+
+    // Prepare service items
+    const serviceItems = [
+      ...activeServices
         .filter((s) => s.quantity > 0)
         .map((s) => ({
-          id: s.id,
-          name: s.name,
+          branch_service_id: parseInt(s.id),
           quantity: s.quantity,
-          price: s.price,
-          unit: s.unit,
-          durationHours: s.durationHours,
+          start_time: startTime,
+          end_time: endTime,
+          by_month: 0,
+          employee_id: null,
         })),
-      coaches: activeCoaches
+      ...activeCoaches
         .filter((c) => c.quantity > 0)
         .map((c) => ({
-          id: c.id,
-          name: c.name,
+          branch_service_id: trainerBranchServiceId,
           quantity: c.quantity,
-          pricePerHour: c.pricePerHour,
-          durationHours: c.durationHours,
+          start_time: startTime,
+          end_time: endTime,
+          by_month: 0,
+          employee_id: parseInt(c.id),
         })),
-      totalServiceFee,
-    });
+    ];
 
-    // Move to next step
-    if (isReceptionist) {
-      const booking = availBookings.find((b) => b.id === localBookingId);
-      if (booking) {
-        setLastBooking({
-          bookingId: booking.bookingRef,
-          branch: "VietSport TP. Hồ Chí Minh - Quận 1",
-          courtName: booking.courtName,
-          courtType: booking.courtType,
-          date: booking.date.toISOString(),
-          timeRange: booking.timeRange,
-          services: activeServices
-            .filter((s) => s.quantity > 0)
-            .map((s) => ({
-              name: s.name,
-              qty: s.quantity,
-              price: s.price,
-              unit: s.unit,
-            })),
-          subtotal: totalServiceFee, // Just service fee
-          total: totalServiceFee,
-          paymentMethod: "counter", // Default to counter/cash
-          status: "success",
-        });
+    if (serviceItems.length === 0) {
+      // No services selected, just proceed
+      if (isReceptionist) {
+        const booking = availBookings.find((b) => b.id === localBookingId);
+        if (booking) {
+          setLastBooking({
+            bookingId: booking.bookingRef,
+            branch: "VietSport TP. Hồ Chí Minh - Quận 1",
+            courtName: booking.courtName,
+            courtType: booking.courtType,
+            date: booking.date.toISOString(),
+            timeRange: booking.timeRange,
+            services: [],
+            subtotal: 0,
+            total: 0,
+            paymentMethod: "counter",
+            status: "success",
+          });
+        }
+        toast.success("Đã lập phiếu dịch vụ thành công");
+        resetFlow();
+        router.push("/booking/manage");
+      } else {
+        setCurrentStep(3);
+        router.push("/booking/payment");
       }
-      toast.success("Đã lập phiếu dịch vụ thành công");
-      resetFlow();
-      router.push("/booking/confirmation");
-    } else {
-      setCurrentStep(3);
-      // If coming from edit flow, preserve bookingId in URL
-      const bookingIdParam = bookingIdFromQuery
-        ? `?bookingId=${bookingIdFromQuery}`
-        : "";
-      router.push(`/booking/payment${bookingIdParam}`);
+      return;
+    }
+
+    // Create service booking via API
+    const serviceBookingRequest = {
+      courtBookingId: parseInt(localBookingId),
+      employeeId: isReceptionist ? user?.employeeId : undefined,
+      items: JSON.stringify(serviceItems),
+    };
+
+    try {
+      const response = await createServiceBookingMutation.mutateAsync(serviceBookingRequest);
+
+      // Calculate total service fee
+      let totalServiceFee = 0;
+      activeServices.forEach((service) => {
+        if (service.quantity > 0 && service.unit !== "free") {
+          if (service.unit === "hour") {
+            totalServiceFee +=
+              service.price * service.quantity * (service.durationHours || 1);
+          } else {
+            totalServiceFee += service.price * service.quantity;
+          }
+        }
+      });
+
+      activeCoaches.forEach((coach) => {
+        if (coach.quantity > 0) {
+          totalServiceFee +=
+            coach.pricePerHour * coach.quantity * (coach.durationHours || 1);
+        }
+      });
+
+      // Save service booking to store
+      const serviceBookingId = response.id || `SB-${Date.now()}`;
+      setServiceBooking({
+        id: serviceBookingId.toString(),
+        courtBookingId: localBookingId,
+        services: activeServices
+          .filter((s) => s.quantity > 0)
+          .map((s) => ({
+            id: s.id,
+            name: s.name,
+            quantity: s.quantity,
+            price: s.price,
+            unit: s.unit,
+            durationHours: s.durationHours,
+          })),
+        coaches: activeCoaches
+          .filter((c) => c.quantity > 0)
+          .map((c) => ({
+            id: c.id,
+            name: c.name,
+            quantity: c.quantity,
+            pricePerHour: c.pricePerHour,
+            durationHours: c.durationHours,
+          })),
+        totalServiceFee,
+      });
+
+      // Move to next step
+      if (isReceptionist) {
+        const booking = availBookings.find((b) => b.id === localBookingId);
+        if (booking) {
+          setLastBooking({
+            bookingId: booking.bookingRef,
+            branch: "VietSport TP. Hồ Chí Minh - Quận 1",
+            courtName: booking.courtName,
+            courtType: booking.courtType,
+            date: booking.date.toISOString(),
+            timeRange: booking.timeRange,
+            services: activeServices
+              .filter((s) => s.quantity > 0)
+              .map((s) => ({
+                name: s.name,
+                qty: s.quantity,
+                price: s.price,
+                unit: s.unit,
+              })),
+            subtotal: totalServiceFee, // Just service fee
+            total: totalServiceFee,
+            paymentMethod: "counter", // Default to counter/cash
+            status: "success",
+          });
+        }
+        toast.success("Đã lập phiếu dịch vụ thành công");
+        resetFlow();
+        router.push("/booking/manage");
+      } else {
+        setCurrentStep(3);
+        // If coming from edit flow, preserve bookingId in URL
+        const bookingIdParam = bookingIdFromQuery
+          ? `?bookingId=${bookingIdFromQuery}`
+          : "";
+        router.push(`/booking/payment${bookingIdParam}`);
+      }
+    } catch (error) {
+      console.error("Failed to create service booking:", error);
+      alert("Có lỗi xảy ra khi tạo phiếu dịch vụ. Vui lòng thử lại.");
     }
   }, [
     router,
@@ -461,6 +563,8 @@ export default function ServicesPage() {
     isReceptionist,
     availBookings,
     resetFlow,
+    user,
+    createServiceBookingMutation,
   ]);
 
   const handleBack = React.useCallback(() => {

@@ -14,7 +14,7 @@ import { useBookingFlowStore } from "@/features/booking/stores/useBookingFlowSto
 import { useAuth } from "@/features/auth/lib/useAuth";
 import { BookingProgress } from "@/features/booking/components";
 import { ROLES } from "@/lib/role-labels";
-import { useCustomers, useCourtTypes, useCourts, useBranches } from "@/lib/api";
+import { useCustomers, useCourtTypes, useCourts, useBranches, useCreateCourtBooking } from "@/lib/api";
 
 export default function BookingCourtPage() {
   const router = useRouter();
@@ -23,6 +23,9 @@ export default function BookingCourtPage() {
     useBookingFlowStore();
 
   const isReceptionist = user?.role === ROLES.RECEPTIONIST || user?.role?.toLowerCase() === "receptionist";
+
+  // Mutation for creating court booking
+  const createCourtBookingMutation = useCreateCourtBooking();
 
   // Fetch real data
   const { data: customers = [] } = useCustomers();
@@ -40,7 +43,7 @@ export default function BookingCourtPage() {
   // Sync facilityId with user's branch or first available branch
   React.useEffect(() => {
     if (user?.branchId && !filters.facilityId) {
-      setFilters(prev => ({ ...prev, facilityId: user.branchId.toString() }));
+      setFilters(prev => ({ ...prev, facilityId: user.branchId!.toString() }));
     } else if (branches.length > 0 && !filters.facilityId) {
       setFilters(prev => ({ ...prev, facilityId: branches[0].id.toString() }));
     }
@@ -137,7 +140,7 @@ export default function BookingCourtPage() {
     });
   }, []);
 
-  const handleContinue = React.useCallback(() => {
+  const handleContinue = React.useCallback(async () => {
     // Validate receptionist must select customer
     if (isReceptionist && !selectedCustomer) {
       alert("Vui lòng chọn khách hàng");
@@ -149,53 +152,75 @@ export default function BookingCourtPage() {
       return;
     }
 
-    // Calculate total court fee from individual slot prices using numeric addition
-    const totalCourtFee = selectedSlots.reduce((sum, slot) => {
-      const price = typeof slot.price === 'string' ? parseFloat(slot.price) : (slot.price || 0);
-      return sum + price;
-    }, 0);
-    const pricePerHour = selectedCourt.baseHourlyPrice || 50000;
-
-    // Generate booking ID
-    const bookingId = `BK-${Date.now()}`;
-
     // Get customer info
     const customer = isReceptionist
       ? customersForUI.find((c) => c.id === selectedCustomer)
-      : { id: user?.username || "guest", name: user?.fullName || "Guest" };
+      : { id: user?.id || 0, name: user?.fullName || "Guest" };
 
-    // Get branch name
-    const branch = branches.find((b: any) => b.id.toString() === filters.facilityId);
-
-    // Save court booking to store
-    setCourtBooking({
-      id: bookingId,
-      customerId: customer?.id,
-      customerName: customer?.name,
-      courtId: selectedCourt.id,
-      courtName: selectedCourt.name,
-      courtType: currentCourtType.name,
-      facilityId: filters.facilityId,
-      facilityName: (currentBranch as any)?.name || branch?.branchName || "VietSport",
-      date: filters.date,
-      timeSlots: selectedSlots.map((s) => ({
-        start: s.start,
-        end: s.end,
-        price: s.price
-      })),
-      pricePerHour,
-      totalCourtFee,
-      status: "held",
-    });
-
-    // Save customer ID if receptionist
-    if (isReceptionist && selectedCustomer) {
-      setSelectedCustomerId(selectedCustomer);
+    if (!customer) {
+      alert("Không tìm thấy thông tin khách hàng");
+      return;
     }
 
-    // Move to next step
-    setCurrentStep(2);
-    router.push("/booking/services");
+    // Prepare API request
+    const bookingRequest = {
+      creator: isReceptionist ? user?.employeeId : undefined,
+      customerId: customer.id,
+      courtId: parseInt(selectedCourt.id.toString()),
+      bookingDate: filters.date.toISOString().split('T')[0], // YYYY-MM-DD format
+      slots: JSON.stringify(selectedSlots.map((s) => ({
+        start_time: `${filters.date.toISOString().split('T')[0]}T${s.start}:00`,
+        end_time: `${filters.date.toISOString().split('T')[0]}T${s.end}:00`,
+      }))),
+      byMonth: false,
+      branchId: parseInt(filters.facilityId),
+      type: isReceptionist ? "Trực tiếp" : "Online",
+    };
+
+    try {
+      const response = await createCourtBookingMutation.mutateAsync(bookingRequest);
+      
+      // Save to store for UI flow
+      const bookingId = response.id || `BK-${Date.now()}`;
+      const totalCourtFee = selectedSlots.reduce((sum, slot) => {
+        const price = typeof slot.price === 'string' ? parseFloat(slot.price) : (slot.price || 0);
+        return sum + price;
+      }, 0);
+      const pricePerHour = selectedCourt.baseHourlyPrice || 50000;
+      const branch = branches.find((b: any) => b.id.toString() === filters.facilityId);
+
+      setCourtBooking({
+        id: bookingId.toString(),
+        customerId: customer?.id,
+        customerName: customer?.name,
+        courtId: selectedCourt.id,
+        courtName: selectedCourt.name,
+        courtType: currentCourtType.name,
+        facilityId: filters.facilityId,
+        facilityName: (currentBranch as any)?.name || branch?.branchName || "VietSport",
+        date: filters.date,
+        timeSlots: selectedSlots.map((s) => ({
+          start: s.start,
+          end: s.end,
+          price: s.price
+        })),
+        pricePerHour,
+        totalCourtFee,
+        status: "held",
+      });
+
+      // Save customer ID if receptionist
+      if (isReceptionist && selectedCustomer) {
+        setSelectedCustomerId(selectedCustomer);
+      }
+
+      // Move to next step
+      setCurrentStep(2);
+      router.push("/booking/services");
+    } catch (error) {
+      console.error("Failed to create court booking:", error);
+      alert("Có lỗi xảy ra khi tạo phiếu đặt sân. Vui lòng thử lại.");
+    }
   }, [
     router,
     isReceptionist,
@@ -210,6 +235,7 @@ export default function BookingCourtPage() {
     setCourtBooking,
     setCurrentStep,
     setSelectedCustomerId,
+    createCourtBookingMutation,
   ]);
 
   return (

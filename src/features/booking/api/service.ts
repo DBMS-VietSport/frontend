@@ -358,11 +358,9 @@ export async function fetchCourts(branchId?: number, courtTypeId?: number) {
     name: court.name,
     status: court.status,
     capacity: court.capacity,
-    base_hourly_price: court.base_hourly_price,
-    maintenance_date: court.maintenance_date,
-    branch_id: court.branch_id,
-    court_type_id: court.court_type_id,
-    court_type: court.court_type,
+    base_hourly_price: court.baseHourlyPrice,
+    branch_id: court.branchId,
+    court_type_id: court.courtTypeId,
   }));
 }
 

@@ -395,11 +395,11 @@ export default function AppSidebar() {
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
                 <span className="text-sm font-semibold text-primary">
-                  {user.fullName.charAt(0)}
+                  {user.fullName?.charAt(0) || user.username.charAt(0)}
                 </span>
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium truncate">{user.fullName}</p>
+                <p className="text-sm font-medium truncate">{user.fullName || user.username}</p>
                 <p className="text-xs text-muted-foreground">
                   {ROLE_LABELS[user.role]}
                 </p>
