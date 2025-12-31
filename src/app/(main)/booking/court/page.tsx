@@ -13,6 +13,7 @@ import type { CustomerCourt as Court, CustomerCourtType as CourtType, TimeSlot }
 import { useBookingFlowStore } from "@/features/booking/stores/useBookingFlowStore";
 import { useAuth } from "@/features/auth/lib/useAuth";
 import { BookingProgress } from "@/features/booking/components";
+import { toast } from "sonner";
 import { ROLES } from "@/lib/role-labels";
 import { useCustomers, useCourtTypes, useCourts, useBranches, useCreateCourtBooking } from "@/lib/api";
 
@@ -143,12 +144,12 @@ export default function BookingCourtPage() {
   const handleContinue = React.useCallback(async () => {
     // Validate receptionist must select customer
     if (isReceptionist && !selectedCustomer) {
-      alert("Vui lòng chọn khách hàng");
+      toast.error("Vui lòng chọn khách hàng");
       return;
     }
 
     if (!selectedCourt || !currentCourtType || selectedSlots.length === 0) {
-      alert("Vui lòng chọn đầy đủ thông tin đặt sân");
+      toast.error("Vui lòng chọn đầy đủ thông tin đặt sân");
       return;
     }
 
@@ -158,7 +159,7 @@ export default function BookingCourtPage() {
       : { id: user?.id || 0, name: user?.fullName || "Guest" };
 
     if (!customer) {
-      alert("Không tìm thấy thông tin khách hàng");
+      toast.error("Không tìm thấy thông tin khách hàng");
       return;
     }
 
@@ -214,12 +215,14 @@ export default function BookingCourtPage() {
         setSelectedCustomerId(selectedCustomer);
       }
 
+      toast.success("Đặt sân thành công!");
+
       // Move to next step
       setCurrentStep(2);
       router.push("/booking/services");
     } catch (error) {
       console.error("Failed to create court booking:", error);
-      alert("Có lỗi xảy ra khi tạo phiếu đặt sân. Vui lòng thử lại.");
+      toast.error("Có lỗi xảy ra khi tạo phiếu đặt sân. Vui lòng thử lại.");
     }
   }, [
     router,

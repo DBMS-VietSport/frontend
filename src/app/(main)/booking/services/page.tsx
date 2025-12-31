@@ -366,14 +366,14 @@ export default function ServicesPage() {
 
   const handleContinue = React.useCallback(async () => {
     if (!localBookingId) {
-      alert("Vui lòng chọn phiếu đặt sân");
+      toast.error("Vui lòng chọn phiếu đặt sân");
       return;
     }
 
     // Get booking data for slots
     const selectedBooking = availBookings.find((b) => b.id === localBookingId);
     if (!selectedBooking) {
-      alert("Không tìm thấy thông tin đặt sân");
+      toast.error("Không tìm thấy thông tin đặt sân");
       return;
     }
 
@@ -391,7 +391,7 @@ export default function ServicesPage() {
     }
 
     if (!startTime || !endTime) {
-      alert("Không thể lấy thông tin thời gian đặt sân");
+      toast.error("Không thể lấy thông tin thời gian đặt sân");
       return;
     }
 
@@ -541,6 +541,7 @@ export default function ServicesPage() {
         resetFlow();
         router.push("/booking/manage");
       } else {
+        toast.success("Đặt dịch vụ thành công!");
         setCurrentStep(3);
         // If coming from edit flow, preserve bookingId in URL
         const bookingIdParam = bookingIdFromQuery
@@ -550,7 +551,7 @@ export default function ServicesPage() {
       }
     } catch (error) {
       console.error("Failed to create service booking:", error);
-      alert("Có lỗi xảy ra khi tạo phiếu dịch vụ. Vui lòng thử lại.");
+      toast.error("Có lỗi xảy ra khi tạo phiếu dịch vụ. Vui lòng thử lại.");
     }
   }, [
     router,

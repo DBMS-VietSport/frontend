@@ -216,8 +216,8 @@ export function CourtTimeSlotGrid({
         <span className="text-[10px] uppercase tracking-wider opacity-70">
           {slot.status === "available" && isSelected && "Đã chọn"}
           {slot.status === "available" && !isSelected && "Trống"}
-          {slot.status === "booked" && "Đã đặt"}
-          {slot.status === "pending" && "Chờ"}
+          {slot.status === "booked" && (slot.bookedBy ? `Đã đặt - ${slot.bookedBy}` : "Đã đặt")}
+          {slot.status === "pending" && (slot.bookedBy ? `Chờ - ${slot.bookedBy}` : "Chờ")}
           {slot.status === "past" && "Đã qua"}
         </span>
       </Button>

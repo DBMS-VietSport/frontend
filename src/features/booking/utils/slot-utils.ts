@@ -67,11 +67,13 @@ export function generateRealTimeSlots({
         const endStr = format(slotEnd, "HH:mm");
 
         // Check if slot is in the past
-        // const isSlotPast = isPast(slotStart) && format(slotStart, "yyyy-MM-dd") === format(now, "yyyy-MM-dd");
-        // Also check if the date is in the past
-        // const isDatePast = selectedDate < new Date(now.setHours(0, 0, 0, 0));
+        const now = new Date();
+        const isSlotPast = isPast(slotStart) && format(slotStart, "yyyy-MM-dd") === format(now, "yyyy-MM-dd");
+        // Check if the date is in the past
+        const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const isDatePast = selectedDate < startOfToday;
 
-        let status: TimeSlotStatus = "available"; // (isSlotPast || isDatePast) ? "past" : "available";
+        let status: TimeSlotStatus = "available";
         let bookedBy: string | undefined;
         let phone: string | undefined;
 
@@ -102,6 +104,11 @@ export function generateRealTimeSlots({
 
             bookedBy = overlappingBooking.customer_name;
             phone = overlappingBooking.customer_phone_number;
+        }
+
+        // If not booked and in the past, mark as past
+        if (status === "available" && (isSlotPast || isDatePast)) {
+            status = "past";
         }
 
         // MANUALLY construct ISO string using LOCAL time
