@@ -167,7 +167,7 @@ export function useCreateCourtBooking() {
         mutationFn: (request: CourtBookingRequest) => createCourtBooking(request),
         onSuccess: () => {
             // Invalidate and refetch booking lists
-            queryClient.invalidateQueries({ queryKey: bookingKeys.lists() });
+            queryClient.invalidateQueries({ queryKey: bookingKeys.all });
         },
     });
 }
@@ -195,7 +195,7 @@ export function useUpdateCourtBooking() {
         onSuccess: (_, variables) => {
             // Invalidate specific booking and lists
             queryClient.invalidateQueries({ queryKey: bookingKeys.detail(variables.bookingId) });
-            queryClient.invalidateQueries({ queryKey: bookingKeys.lists() });
+            queryClient.invalidateQueries({ queryKey: bookingKeys.all });
         },
     });
 }
@@ -211,7 +211,7 @@ export function useCancelCourtBooking() {
         onSuccess: (_, bookingId) => {
             // Invalidate specific booking and lists
             queryClient.invalidateQueries({ queryKey: bookingKeys.detail(bookingId) });
-            queryClient.invalidateQueries({ queryKey: bookingKeys.lists() });
+            queryClient.invalidateQueries({ queryKey: bookingKeys.all });
         },
     });
 }

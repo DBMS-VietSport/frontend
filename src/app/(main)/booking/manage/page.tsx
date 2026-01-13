@@ -122,7 +122,85 @@ export default function BookingManagePage() {
 
   const isCustomerUser = isCustomer(user);
 
-  // Show error state
+  // Transform selectedBooking for dialog - MUST be before any early returns
+  const transformedBooking = React.useMemo(() => {
+    if (!selectedBooking) return null;
+
+    // Safe transformation of API response to BookingDetailView
+    const raw = selectedBooking as any;
+
+    // 1. Calculate fees (if not directly provided)
+    const courtFee = Number(raw.booked_base_price) || 0;
+    // Note: In a real app complexity, this might need summation of slots * price per slot.
+    // Here we assume backend returns a base price or we sum invoices.
+
+    const bookingSlots = raw.booking_slots || [];
+    const serviceBooking = raw.service_booking?.[0]; // Assuming 1:1 or taking first
+    const serviceItemsRaw = serviceBooking?.service_booking_item || [];
+
+    // Transform service items
+    const serviceItems: any[] = serviceItemsRaw.map((item: any) => ({
+      ...item,
+      service: item.branch_service?.service || {},
+      branchService: item.branch_service || {},
+      // Handle if trainers/referees are needed
+    }));
+
+    const serviceFee = serviceItems.reduce((sum: number, item: any) => {
+      return sum + (Number(item.quantity) * Number(item.branchService?.unit_price || 0));
+    }, 0);
+
+    const totalAmount = courtFee + serviceFee; // Simplified calculation
+
+    // 2. Map to BookingDetailView
+    return {
+      id: raw.id,
+      code: `BK-${raw.id}`,
+      branchName: raw.court?.branch?.name || raw.branch?.name || '-',
+      // Extract nested properties safely
+      courtName: raw.court?.name || '-',
+      courtType: raw.court?.court_type?.name || '-',
+      customerName: raw.customer?.full_name || '-',
+      employeeName: raw.employee?.full_name || '-',
+      timeRange: bookingSlots.length > 0
+        ? `${formatTime(bookingSlots[0].start_time)} - ${formatTime(bookingSlots[bookingSlots.length - 1].end_time)}`
+        : '-',
+      paymentStatus: raw.status === 'Paid' || raw.status === 'Đã thanh toán' ? 'Đã thanh toán' : 'Chưa thanh toán',
+      courtStatus: raw.status || 'Pending',
+      bookingDate: raw.booking_date,
+      createdAt: raw.created_at,
+
+      // Full Objects
+      customer: raw.customer || {},
+      employee: raw.employee,
+      court: raw.court || {},
+      courtTypeData: raw.court?.court_type || {},
+      branch: raw.court?.branch || {},
+
+      // Arrays with fallbacks
+      slots: bookingSlots.map((slot: any) => {
+        let status = slot.status;
+        if (status === "Đã đặt") status = "booked";
+        else if (status === "Trống") status = "available";
+        else if (status === "Đang giữ chỗ") status = "pending";
+
+        return {
+          ...slot,
+          status: status || 'booked'
+        };
+      }),
+      invoices: raw.invoice || [],
+      serviceBooking: serviceBooking,
+
+      // Calculated/Transformed
+      serviceItems: serviceItems,
+      courtFee: courtFee,
+      serviceFee: serviceFee,
+      totalAmount: totalAmount
+    };
+  }, [selectedBooking]);
+
+  // Show error state AFTER all hooks
   if (error) {
     return (
       <div className="container mx-auto py-6 max-w-screen-2xl">
@@ -184,84 +262,8 @@ export default function BookingManagePage() {
       )}
 
       {/* Detail Dialog */}
-      {/* Detail Dialog */}
       <BookingDetailDialog
-        booking={React.useMemo(() => {
-          if (!selectedBooking) return null;
-
-          // Safe transformation of API response to BookingDetailView
-          const raw = selectedBooking as any;
-
-          // 1. Calculate fees (if not directly provided)
-          const courtFee = Number(raw.booked_base_price) || 0;
-          // Note: In a real app complexity, this might need summation of slots * price per slot.
-          // Here we assume backend returns a base price or we sum invoices.
-
-          const bookingSlots = raw.booking_slots || [];
-          const serviceBooking = raw.service_booking?.[0]; // Assuming 1:1 or taking first
-          const serviceItemsRaw = serviceBooking?.service_booking_item || [];
-
-          // Transform service items
-          const serviceItems: any[] = serviceItemsRaw.map((item: any) => ({
-            ...item,
-            service: item.branch_service?.service || {},
-            branchService: item.branch_service || {},
-            // Handle if trainers/referees are needed
-          }));
-
-          const serviceFee = serviceItems.reduce((sum: number, item: any) => {
-            return sum + (Number(item.quantity) * Number(item.branchService?.unit_price || 0));
-          }, 0);
-
-          const totalAmount = courtFee + serviceFee; // Simplified calculation
-
-          // 2. Map to BookingDetailView
-          return {
-            id: raw.id,
-            code: `BK-${raw.id}`,
-            branchName: raw.court?.branch?.name || raw.branch?.name || '-',
-            // Extract nested properties safely
-            courtName: raw.court?.name || '-',
-            courtType: raw.court?.court_type?.name || '-',
-            customerName: raw.customer?.full_name || '-',
-            employeeName: raw.employee?.full_name || '-',
-            timeRange: bookingSlots.length > 0
-              ? `${formatTime(bookingSlots[0].start_time)} - ${formatTime(bookingSlots[bookingSlots.length - 1].end_time)}`
-              : '-',
-            paymentStatus: raw.status === 'Paid' || raw.status === 'Đã thanh toán' ? 'Đã thanh toán' : 'Chưa thanh toán',
-            courtStatus: raw.status || 'Pending',
-            bookingDate: raw.booking_date,
-            createdAt: raw.created_at,
-
-            // Full Objects
-            customer: raw.customer || {},
-            employee: raw.employee,
-            court: raw.court || {},
-            courtTypeData: raw.court?.court_type || {},
-            branch: raw.court?.branch || {},
-
-            // Arrays with fallbacks
-            slots: bookingSlots.map((slot: any) => {
-              let status = slot.status;
-              if (status === "Đã đặt") status = "booked";
-              else if (status === "Trống") status = "available";
-              else if (status === "Đang giữ chỗ") status = "pending";
-
-              return {
-                ...slot,
-                status: status || 'booked'
-              };
-            }),
-            invoices: raw.invoice || [],
-            serviceBooking: serviceBooking,
-
-            // Calculated/Transformed
-            serviceItems: serviceItems,
-            courtFee: courtFee,
-            serviceFee: serviceFee,
-            totalAmount: totalAmount
-          };
-        }, [selectedBooking])}
+        booking={transformedBooking}
         open={dialogOpen}
         onOpenChange={handleDialogClose}
       />
