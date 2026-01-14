@@ -85,12 +85,32 @@ export async function createCourtBooking(
 }
 
 /**
+ * Create a new court booking using clone endpoint (for testing)
+ */
+export async function createCourtBookingClone(
+  request: CourtBookingRequest
+): Promise<CourtBooking> {
+  const response = await apiClient.post("/booking/court-bookings-clone", request);
+  return response.data;
+}
+
+/**
  * Create a new service booking
  */
 export async function createServiceBooking(
   request: ServiceBookingRequest
 ): Promise<any> {
   const response = await apiClient.post("/booking/service-bookings", request);
+  return response.data;
+}
+
+/**
+ * Create a new service booking using clone endpoint (for testing)
+ */
+export async function createServiceBookingClone(
+  request: ServiceBookingRequest
+): Promise<any> {
+  const response = await apiClient.post("/booking/service-bookings-clone", request);
   return response.data;
 }
 

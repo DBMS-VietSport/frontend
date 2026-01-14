@@ -16,11 +16,13 @@ import {
     getBranches,
     getCustomerCourtBookings,
     createCourtBooking,
+    createCourtBookingClone,
     updateCourtBooking,
     getAvailableTrainers,
     getServiceBookingDetails,
     getCourtBookingServiceBookings as getServiceBookingInfo,
     createServiceBooking,
+    createServiceBookingClone,
     calculateSlotsPrice,
     type CourtBookingRequest,
     type ServiceBookingRequest,
@@ -173,6 +175,21 @@ export function useCreateCourtBooking() {
 }
 
 /**
+ * Create court booking mutation using clone endpoint (for testing)
+ */
+export function useCreateCourtBookingClone() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: (request: CourtBookingRequest) => createCourtBookingClone(request),
+        onSuccess: () => {
+            // Invalidate and refetch booking lists
+            queryClient.invalidateQueries({ queryKey: bookingKeys.all });
+        },
+    });
+}
+
+/**
  * Update court booking mutation
  */
 export function useUpdateCourtBooking() {
@@ -224,6 +241,21 @@ export function useCreateServiceBooking() {
 
     return useMutation({
         mutationFn: (request: ServiceBookingRequest) => createServiceBooking(request),
+        onSuccess: (_, variables) => {
+            // Invalidate the related court booking
+            queryClient.invalidateQueries({ queryKey: bookingKeys.detail(variables.courtBookingId) });
+        },
+    });
+}
+
+/**
+ * Create service booking mutation using clone endpoint (for testing)
+ */
+export function useCreateServiceBookingClone() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: (request: ServiceBookingRequest) => createServiceBookingClone(request),
         onSuccess: (_, variables) => {
             // Invalidate the related court booking
             queryClient.invalidateQueries({ queryKey: bookingKeys.detail(variables.courtBookingId) });

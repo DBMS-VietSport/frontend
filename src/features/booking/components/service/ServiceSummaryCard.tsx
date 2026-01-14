@@ -18,6 +18,7 @@ interface ServiceSummaryCardProps {
   services: ServiceItem[];
   coaches: Coach[];
   onContinue: () => void;
+  onContinueClone?: () => void;
   actionLabel?: string;
 }
 
@@ -31,6 +32,7 @@ export function ServiceSummaryCard({
   services,
   coaches,
   onContinue,
+  onContinueClone,
   actionLabel = "Tiếp tục",
 }: ServiceSummaryCardProps) {
   const duration = courtType.slotDuration / 60; // hours per slot
@@ -271,6 +273,19 @@ export function ServiceSummaryCard({
           {actionLabel}
           <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
         </Button>
+
+        {/* Clone Button (for testing) */}
+        {onContinueClone && (
+          <Button
+            onClick={onContinueClone}
+            variant="outline"
+            className="w-full h-12 text-base font-semibold group"
+            size="lg"
+          >
+            {actionLabel} (Clone - Testing)
+            <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
+          </Button>
+        )}
 
         <p className="text-xs text-center text-muted-foreground">
           {actionLabel === "Tiếp tục"

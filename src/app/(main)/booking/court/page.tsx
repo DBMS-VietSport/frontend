@@ -15,7 +15,7 @@ import { useAuth } from "@/features/auth/lib/useAuth";
 import { BookingProgress } from "@/features/booking/components";
 import { toast } from "sonner";
 import { ROLES } from "@/lib/role-labels";
-import { useCustomers, useCourtTypes, useCourts, useBranches, useCreateCourtBooking } from "@/lib/api";
+import { useCustomers, useCourtTypes, useCourts, useBranches, useCreateCourtBooking, useCreateCourtBookingClone } from "@/lib/api";
 
 export default function BookingCourtPage() {
   const router = useRouter();
@@ -27,6 +27,7 @@ export default function BookingCourtPage() {
 
   // Mutation for creating court booking
   const createCourtBookingMutation = useCreateCourtBooking();
+  const createCourtBookingCloneMutation = useCreateCourtBookingClone();
 
   // Fetch real data
   const { data: customers = [] } = useCustomers();
@@ -241,6 +242,107 @@ export default function BookingCourtPage() {
     createCourtBookingMutation,
   ]);
 
+  const handleContinueClone = React.useCallback(async () => {
+    // Validate receptionist must select customer
+    if (isReceptionist && !selectedCustomer) {
+      toast.error("Vui lòng chọn khách hàng");
+      return;
+    }
+
+    if (!selectedCourt || !currentCourtType || selectedSlots.length === 0) {
+      toast.error("Vui lòng chọn đầy đủ thông tin đặt sân");
+      return;
+    }
+
+    // Get customer info
+    const customer = isReceptionist
+      ? customersForUI.find((c) => c.id === selectedCustomer)
+      : { id: user?.id || 0, name: user?.fullName || "Guest" };
+
+    if (!customer) {
+      toast.error("Không tìm thấy thông tin khách hàng");
+      return;
+    }
+
+    // Prepare API request
+    const bookingRequest = {
+      creator: isReceptionist ? user?.employeeId : undefined,
+      customerId: customer.id,
+      courtId: parseInt(selectedCourt.id.toString()),
+      bookingDate: filters.date.toISOString().split('T')[0], // YYYY-MM-DD format
+      slots: JSON.stringify(selectedSlots.map((s) => ({
+        start_time: `${filters.date.toISOString().split('T')[0]}T${s.start}:00`,
+        end_time: `${filters.date.toISOString().split('T')[0]}T${s.end}:00`,
+      }))),
+      byMonth: false,
+      branchId: parseInt(filters.facilityId),
+      type: isReceptionist ? "Trực tiếp" : "Online",
+    };
+
+    try {
+      const response = await createCourtBookingCloneMutation.mutateAsync(bookingRequest);
+      
+      // Save to store for UI flow
+      const bookingId = response.id || `BK-${Date.now()}`;
+      const totalCourtFee = selectedSlots.reduce((sum, slot) => {
+        const price = typeof slot.price === 'string' ? parseFloat(slot.price) : (slot.price || 0);
+        return sum + price;
+      }, 0);
+      const pricePerHour = selectedCourt.baseHourlyPrice || 50000;
+      const branch = branches.find((b: any) => b.id.toString() === filters.facilityId);
+
+      setCourtBooking({
+        id: bookingId.toString(),
+        customerId: customer?.id,
+        customerName: customer?.name,
+        courtId: selectedCourt.id,
+        courtName: selectedCourt.name,
+        courtType: currentCourtType.name,
+        facilityId: filters.facilityId,
+        facilityName: (currentBranch as any)?.name || branch?.branchName || "VietSport",
+        date: filters.date,
+        timeSlots: selectedSlots.map((s) => ({
+          start: s.start,
+          end: s.end,
+          price: s.price
+        })),
+        pricePerHour,
+        totalCourtFee,
+        status: "held",
+      });
+
+      // Save customer ID if receptionist
+      if (isReceptionist && selectedCustomer) {
+        setSelectedCustomerId(selectedCustomer);
+      }
+
+      toast.success("Đặt sân thành công (Clone)!");
+
+      // Move to next step
+      setCurrentStep(2);
+      router.push("/booking/services");
+    } catch (error) {
+      console.error("Failed to create court booking with clone:", error);
+      toast.error("Có lỗi xảy ra khi tạo phiếu đặt sân (Clone). Vui lòng thử lại.");
+    }
+  }, [
+    router,
+    isReceptionist,
+    selectedCustomer,
+    selectedCourt,
+    currentCourtType,
+    selectedSlots,
+    filters,
+    user,
+    branches,
+    customersForUI,
+    setCourtBooking,
+    setCurrentStep,
+    setSelectedCustomerId,
+    createCourtBookingCloneMutation,
+    currentBranch,
+  ]);
+
   return (
     <div className="container mx-auto py-6 space-y-8 max-w-screen-2xl">
       {/* Page Header */}
@@ -319,6 +421,7 @@ export default function BookingCourtPage() {
               court={selectedCourt}
               courtType={currentCourtType}
               onContinue={handleContinue}
+              onContinueClone={handleContinueClone}
             />
           </div>
         </section>

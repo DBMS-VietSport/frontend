@@ -31,7 +31,7 @@ import {
 import { Card, CardContent } from "@/ui/card";
 import { Label } from "@/ui/label";
 import { ROLES } from "@/lib/role-labels";
-import { useCustomers, useCourtBookings, useBranchServices, useEmployees, useCustomerCourtBookings, useAvailableTrainers, useCreateServiceBooking } from "@/lib/api";
+import { useCustomers, useCourtBookings, useBranchServices, useEmployees, useCustomerCourtBookings, useAvailableTrainers, useCreateServiceBooking, useCreateServiceBookingClone } from "@/lib/api";
 import { toast } from "sonner";
 import { setLastBooking } from "@/features/booking/mock/bookingFlowStore";
 
@@ -57,6 +57,7 @@ export default function ServicesPage() {
 
   // Mutation for creating service booking
   const createServiceBookingMutation = useCreateServiceBooking();
+  const createServiceBookingCloneMutation = useCreateServiceBookingClone();
 
   // Get bookingId and customerId from query params (for edit flow)
   const bookingIdFromQuery = searchParams.get("bookingId");
@@ -566,6 +567,212 @@ export default function ServicesPage() {
     resetFlow,
     user,
     createServiceBookingMutation,
+    branchServicesData,
+  ]);
+
+  const handleContinueClone = React.useCallback(async () => {
+    if (!localBookingId) {
+      toast.error("Vui lòng chọn phiếu đặt sân");
+      return;
+    }
+
+    // Get booking data for slots
+    const selectedBooking = availBookings.find((b) => b.id === localBookingId);
+    if (!selectedBooking) {
+      toast.error("Không tìm thấy thông tin đặt sân");
+      return;
+    }
+
+    // Parse slots to get start and end time
+    let startTime = "";
+    let endTime = "";
+    try {
+      const parsedSlots = typeof selectedBooking.slots === "string" ? JSON.parse(selectedBooking.slots) : selectedBooking.slots;
+      if (Array.isArray(parsedSlots) && parsedSlots.length > 0) {
+        startTime = parsedSlots[0].start_time;
+        endTime = parsedSlots[parsedSlots.length - 1].end_time;
+      }
+    } catch (e) {
+      console.error("Error parsing slots:", e);
+    }
+
+    if (!startTime || !endTime) {
+      toast.error("Không thể lấy thông tin thời gian đặt sân");
+      return;
+    }
+
+    // Find trainer branch service id
+    const trainerBranchService = branchServicesData.find((bs: any) => 
+      bs.service?.name?.toLowerCase().includes("huấn luyện") || 
+      bs.service?.name?.toLowerCase().includes("trainer")
+    );
+    const trainerBranchServiceId = trainerBranchService ? trainerBranchService.id : 1; // fallback
+
+    // Prepare service items
+    const serviceItems = [
+      ...activeServices
+        .filter((s) => s.quantity > 0)
+        .map((s) => ({
+          branch_service_id: parseInt(s.id),
+          quantity: s.quantity,
+          start_time: startTime,
+          end_time: endTime,
+          by_month: 0,
+          employee_id: null,
+        })),
+      ...activeCoaches
+        .filter((c) => c.quantity > 0)
+        .map((c) => ({
+          branch_service_id: trainerBranchServiceId,
+          quantity: c.quantity,
+          start_time: startTime,
+          end_time: endTime,
+          by_month: 0,
+          employee_id: parseInt(c.id),
+        })),
+    ];
+
+    if (serviceItems.length === 0) {
+      // No services selected, just proceed
+      if (isReceptionist) {
+        const booking = availBookings.find((b) => b.id === localBookingId);
+        if (booking) {
+          setLastBooking({
+            bookingId: booking.bookingRef,
+            branch: "VietSport TP. Hồ Chí Minh - Quận 1",
+            courtName: booking.courtName,
+            courtType: booking.courtType,
+            date: booking.date.toISOString(),
+            timeRange: booking.timeRange,
+            services: [],
+            subtotal: 0,
+            total: 0,
+            paymentMethod: "counter",
+            status: "success",
+          });
+        }
+        toast.success("Đã lập phiếu dịch vụ thành công (Clone)");
+        resetFlow();
+        router.push("/booking/manage");
+      } else {
+        setCurrentStep(3);
+        router.push("/booking/payment");
+      }
+      return;
+    }
+
+    // Create service booking via API using clone
+    const serviceBookingRequest = {
+      courtBookingId: parseInt(localBookingId),
+      employeeId: isReceptionist ? user?.employeeId : undefined,
+      items: JSON.stringify(serviceItems),
+    };
+
+    try {
+      const response = await createServiceBookingCloneMutation.mutateAsync(serviceBookingRequest);
+
+      // Calculate total service fee
+      let totalServiceFee = 0;
+      activeServices.forEach((service) => {
+        if (service.quantity > 0 && service.unit !== "free") {
+          if (service.unit === "hour") {
+            totalServiceFee +=
+              service.price * service.quantity * (service.durationHours || 1);
+          } else {
+            totalServiceFee += service.price * service.quantity;
+          }
+        }
+      });
+
+      activeCoaches.forEach((coach) => {
+        if (coach.quantity > 0) {
+          totalServiceFee +=
+            coach.pricePerHour * coach.quantity * (coach.durationHours || 1);
+        }
+      });
+
+      // Save service booking to store
+      const serviceBookingId = response.id || `SB-${Date.now()}`;
+      setServiceBooking({
+        id: serviceBookingId.toString(),
+        courtBookingId: localBookingId,
+        services: activeServices
+          .filter((s) => s.quantity > 0)
+          .map((s) => ({
+            id: s.id,
+            name: s.name,
+            quantity: s.quantity,
+            price: s.price,
+            unit: s.unit,
+            durationHours: s.durationHours,
+          })),
+        coaches: activeCoaches
+          .filter((c) => c.quantity > 0)
+          .map((c) => ({
+            id: c.id,
+            name: c.name,
+            quantity: c.quantity,
+            pricePerHour: c.pricePerHour,
+            durationHours: c.durationHours,
+          })),
+        totalServiceFee,
+      });
+
+      // Move to next step
+      if (isReceptionist) {
+        const booking = availBookings.find((b) => b.id === localBookingId);
+        if (booking) {
+          setLastBooking({
+            bookingId: booking.bookingRef,
+            branch: "VietSport TP. Hồ Chí Minh - Quận 1",
+            courtName: booking.courtName,
+            courtType: booking.courtType,
+            date: booking.date.toISOString(),
+            timeRange: booking.timeRange,
+            services: activeServices
+              .filter((s) => s.quantity > 0)
+              .map((s) => ({
+                name: s.name,
+                qty: s.quantity,
+                price: s.price,
+                unit: s.unit,
+              })),
+            subtotal: totalServiceFee, // Just service fee
+            total: totalServiceFee,
+            paymentMethod: "counter", // Default to counter/cash
+            status: "success",
+          });
+        }
+        toast.success("Đã lập phiếu dịch vụ thành công (Clone)");
+        resetFlow();
+        router.push("/booking/manage");
+      } else {
+        toast.success("Đặt dịch vụ thành công (Clone)!");
+        setCurrentStep(3);
+        // If coming from edit flow, preserve bookingId in URL
+        const bookingIdParam = bookingIdFromQuery
+          ? `?bookingId=${bookingIdFromQuery}`
+          : "";
+        router.push(`/booking/payment${bookingIdParam}`);
+      }
+    } catch (error) {
+      console.error("Failed to create service booking with clone:", error);
+      toast.error("Có lỗi xảy ra khi tạo phiếu dịch vụ (Clone). Vui lòng thử lại.");
+    }
+  }, [
+    router,
+    localBookingId,
+    activeServices,
+    activeCoaches,
+    setServiceBooking,
+    setCurrentStep,
+    bookingIdFromQuery,
+    isReceptionist,
+    availBookings,
+    resetFlow,
+    user,
+    createServiceBookingCloneMutation,
+    branchServicesData,
   ]);
 
   const handleBack = React.useCallback(() => {
@@ -687,6 +894,7 @@ export default function ServicesPage() {
                 services={activeServices}
                 coaches={activeCoaches}
                 onContinue={handleContinue}
+                onContinueClone={handleContinueClone}
                 actionLabel={isReceptionist ? "Xác nhận" : "Tiếp tục"}
               />
             </div>
@@ -700,6 +908,14 @@ export default function ServicesPage() {
               size="lg"
             >
               {isReceptionist ? "Xác nhận" : "Tiếp tục thanh toán"}
+            </Button>
+            <Button
+              onClick={handleContinueClone}
+              variant="outline"
+              className="w-full h-12 text-base font-semibold mt-2"
+              size="lg"
+            >
+              {isReceptionist ? "Xác nhận (Clone - Testing)" : "Tiếp tục thanh toán (Clone - Testing)"}
             </Button>
           </div>
         </>

@@ -14,6 +14,7 @@ interface CourtBookingSummaryCardProps {
   court: Court;
   courtType: CourtType;
   onContinue: () => void;
+  onContinueClone?: () => void;
 }
 
 export function CourtBookingSummaryCard({
@@ -22,6 +23,7 @@ export function CourtBookingSummaryCard({
   court,
   courtType,
   onContinue,
+  onContinueClone,
 }: CourtBookingSummaryCardProps) {
   const duration = (courtType.slotDuration || (courtType as any).rent_duration || 60) / 60; // hours per slot
   const totalSlots = timeSlots.length;
@@ -119,6 +121,19 @@ export function CourtBookingSummaryCard({
           Tiếp tục
           <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
         </Button>
+
+        {/* Clone Button (for testing) */}
+        {onContinueClone && (
+          <Button
+            onClick={onContinueClone}
+            variant="outline"
+            className="w-full h-12 text-base font-semibold group"
+            size="lg"
+          >
+            Tiếp tục (Clone - Testing)
+            <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
+          </Button>
+        )}
 
         <p className="text-xs text-center text-muted-foreground">
           Bấm "Tiếp tục" để chọn dịch vụ bổ sung
