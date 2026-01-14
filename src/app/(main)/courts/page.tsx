@@ -11,7 +11,11 @@ import type {
   CreateCourtPayload,
   UpdateCourtPayload,
 } from "@/features/court/types";
-import { listCourts, addCourt, updateCourt } from "@/features/court/mockRepo";
+import {
+  getCourts,
+  createCourt as createCourtAPI,
+  updateCourt as updateCourtAPI,
+} from "@/lib/api/courts";
 import { searchCourts, filterByCourtType } from "@/features/court/selectors";
 import { toast } from "sonner";
 import { LoadingSpinner, PageHeader } from "@/components";
@@ -29,7 +33,7 @@ export default function CourtsPage() {
 
   // Load courts on mount
   React.useEffect(() => {
-    loadCourts();
+    loadCourtsData();
   }, []);
 
   // Apply filters
@@ -39,11 +43,11 @@ export default function CourtsPage() {
     setFilteredCourts(filtered);
   }, [courts, searchText, selectedType]);
 
-  const loadCourts = async () => {
+  const loadCourtsData = async () => {
     setIsLoading(true);
     try {
-      const data = await listCourts();
-      setCourts(data);
+      const response = await getCourts({ page: 1, limit: 1000 });
+      setCourts(response.data);
     } catch (error) {
       logger.error("Failed to load courts:", error);
       toast.error("Không thể tải danh sách sân");
@@ -63,10 +67,10 @@ export default function CourtsPage() {
 
   const handleAddCourt = async (payload: CreateCourtPayload) => {
     try {
-      // payload mapping: UI payload aligns with Court sans id/display_name
-      await addCourt(payload);
+      await createCourtAPI(payload);
+      setAddDialogOpen(false);
       toast.success("Đã thêm sân mới thành công");
-      await loadCourts();
+      await loadCourtsData();
     } catch (error) {
       logger.error("Failed to add court:", error);
       toast.error("Không thể thêm sân");
@@ -75,9 +79,19 @@ export default function CourtsPage() {
 
   const handleUpdateCourt = async (id: number, payload: UpdateCourtPayload) => {
     try {
-      await updateCourt(id, payload);
+      // Prepare data for sp_UpdateCourt
+      const updateData = {
+        name: payload.name || "",
+        status: payload.status || "Available",
+        capacity: payload.capacity || 0,
+        base_hourly_price: payload.base_hourly_price || 0,
+        maintenance_date: payload.maintenance_date,
+      };
+      
+      await updateCourtAPI(id, updateData);
+      setEditDialogOpen(false);
       toast.success("Cập nhật sân thành công");
-      await loadCourts();
+      await loadCourtsData();
     } catch (error) {
       logger.error("Failed to update court:", error);
       toast.error("Không thể cập nhật sân");

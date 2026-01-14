@@ -68,7 +68,6 @@ export function CourtEditDialog({
     if (!court) return;
 
     // Validation
-    if (formData.base_hourly_price && formData.base_hourly_price <= 0) return;
     if (formData.capacity && formData.capacity <= 0) return;
 
     setIsSaving(true);
@@ -210,7 +209,6 @@ export function CourtEditDialog({
               <Input
                 id="base_hourly_price"
                 type="number"
-                min="0"
                 value={formData.base_hourly_price || court.base_hourly_price}
                 onChange={(e) =>
                   setFormData({

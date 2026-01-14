@@ -74,6 +74,7 @@ export function ServiceDetailDialog({
     current_stock: 0,
     min_stock_threshold: 10,
     status: "Còn",
+    stock_adjustment: 0,
   });
 
   // Initialize form data when service changes
@@ -87,6 +88,7 @@ export function ServiceDetailDialog({
         current_stock: service.current_stock ?? 0,
         min_stock_threshold: service.min_stock_threshold ?? 10,
         status: service.status ?? "Còn",
+        stock_adjustment: 0,
       });
       setIsEditing(false);
     }
@@ -107,7 +109,7 @@ export function ServiceDetailDialog({
 
       const branchServicePayload: UpdateBranchServicePayload = {
         unit_price: formData.unit_price,
-        current_stock: formData.current_stock,
+        current_stock: formData.current_stock + formData.stock_adjustment,
         min_stock_threshold: formData.min_stock_threshold,
         status: formData.status as BranchServiceStatus,
       };
@@ -242,6 +244,7 @@ export function ServiceDetailDialog({
                               current_stock: service.current_stock ?? 0,
                               min_stock_threshold: service.min_stock_threshold ?? 10,
                               status: service.status ?? "Còn",
+                              stock_adjustment: 0,
                             });
                           }
                         }}
@@ -318,22 +321,38 @@ export function ServiceDetailDialog({
                       />
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-4">
                       <div className="space-y-2">
-                        <Label htmlFor="current_stock">Tồn kho hiện tại</Label>
+                        <Label>Tồn kho hiện tại</Label>
+                        <div className="text-sm font-semibold p-2 bg-muted rounded-md">
+                          {formData.current_stock}
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="stock_adjustment">Điều chỉnh tồn kho</Label>
                         <Input
-                          id="current_stock"
+                          id="stock_adjustment"
                           type="number"
-                          min="0"
-                          value={formData.current_stock}
+                          value={formData.stock_adjustment}
                           onChange={(e) =>
                             setFormData({
                               ...formData,
-                              current_stock: parseInt(e.target.value) || 0,
+                              stock_adjustment: parseInt(e.target.value) || 0,
                             })
                           }
-                          required
+                          placeholder="Nhập số dương để tăng, số âm để giảm"
                         />
+                        <p className="text-xs text-muted-foreground">
+                          Số dương (+) để tăng tồn kho, số âm (-) để giảm tồn kho
+                        </p>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label>Tồn kho sau khi điều chỉnh</Label>
+                        <div className="text-lg font-semibold p-2 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-md">
+                          {formData.current_stock + formData.stock_adjustment}
+                        </div>
                       </div>
 
                       <div className="space-y-2">
@@ -397,6 +416,7 @@ export function ServiceDetailDialog({
                               current_stock: service.current_stock ?? 0,
                               min_stock_threshold: service.min_stock_threshold ?? 10,
                               status: service.status ?? "Còn",
+                              stock_adjustment: 0,
                             });
                           }
                         }}
