@@ -20,22 +20,40 @@ import {
   SelectValue,
 } from "@/ui/select";
 import { Separator } from "@/ui/separator";
-import { Badge } from "@/ui/badge";
 import { Textarea } from "@/ui/textarea";
 import { toast } from "sonner";
-import { Loader2, Save, Info, AlertTriangle, Clock } from "lucide-react";
+import { Loader2, Info, AlertTriangle, Clock } from "lucide-react";
 import { useAuth } from "@/features/auth/lib/useAuth";
-import { RequireRole } from "@/features/auth/components/RequireRole";
 import {
-  listBranches,
-  getBranchSettings,
-  updateBranchSettings,
-  type BranchSettings,
-  type UpdateBranchSettingsPayload,
-} from "@/mock/branchSettingsRepo";
+  getBranches,
+  getBranchById,
+  configBranch,
+  type ConfigBranchDto,
+} from "@/lib/api/branches";
 import { logger } from "@/utils/logger";
+import { ROLES } from "@/lib/role-labels";
 
 // --- Helpers ---
+
+interface BranchConfigSettings {
+  id: number;
+  name: string;
+  address: string;
+  hotline: string;
+  late_time_limit: number;
+  max_courts_per_day_per_user: number;
+  shift_pay: number;
+  shift_absence_penalty: number;
+  loyalty_point_rate: number;
+  cancel_fee_before_24h_percent: number;
+  cancel_fee_within_24h_percent: number;
+  no_show_fee_percent: number;
+  night_booking_additional_charge: number;
+  holiday_booking_additional_charge: number;
+  weekend_booking_additional_charge: number;
+  open_time: string;
+  close_time: string;
+}
 
 const formatCurrency = (value: number) =>
   new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(
@@ -55,18 +73,19 @@ const parsePercent = (displayValue: number) => {
 export default function BranchSettingsPage() {
   const { user } = useAuth();
   const isManagerOrAdmin =
-    user?.role === "manager" ||
-    user?.role === "admin" ||
-    user?.role === ("system_admin" as any); // 'system_admin' based on common conventions, checking authMock usually 'admin' covers it.
+    user?.role === ROLES.MANAGER ||
+    user?.role === ROLES.ADMIN;
 
   // State
   const [branches, setBranches] = React.useState<
     Array<{ id: number; name: string }>
   >([]);
   const [selectedBranchId, setSelectedBranchId] = React.useState<string>("");
-  const [settings, setSettings] = React.useState<BranchSettings | null>(null);
+  const [settings, setSettings] = React.useState<BranchConfigSettings | null>(
+    null
+  );
   const [originalSettings, setOriginalSettings] =
-    React.useState<BranchSettings | null>(null);
+    React.useState<BranchConfigSettings | null>(null);
 
   const [isLoading, setIsLoading] = React.useState(false);
   const [isSaving, setIsSaving] = React.useState(false);
@@ -76,7 +95,11 @@ export default function BranchSettingsPage() {
   React.useEffect(() => {
     const fetchBranches = async () => {
       try {
-        const data = await listBranches();
+        const result = await getBranches({ limit: 100 });
+        const data = result.data.map((b: { id: number; name: string }) => ({
+          id: b.id,
+          name: b.name,
+        }));
         setBranches(data);
 
         // Default selection logic
@@ -93,6 +116,7 @@ export default function BranchSettingsPage() {
       }
     };
     fetchBranches();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Load Settings when branch changes
@@ -102,7 +126,7 @@ export default function BranchSettingsPage() {
     const fetchSettings = async () => {
       setIsLoading(true);
       try {
-        const data = await getBranchSettings(parseInt(selectedBranchId));
+        const data = await getBranchById(parseInt(selectedBranchId));
         setSettings(data);
         setOriginalSettings(data);
         setErrors({});
@@ -119,7 +143,7 @@ export default function BranchSettingsPage() {
   }, [selectedBranchId]);
 
   // Handlers
-  const handleFieldChange = (field: keyof BranchSettings, value: any) => {
+  const handleFieldChange = (field: string, value: string | number) => {
     if (!settings) return;
     setSettings({ ...settings, [field]: value });
 
@@ -141,6 +165,12 @@ export default function BranchSettingsPage() {
     if (!settings.hotline.trim())
       newErrors.hotline = "Hotline không được để trống";
     // Phone regex validation could go here
+
+    // Check if there are changes from original settings
+    const hasChanges = originalSettings && JSON.stringify(settings) !== JSON.stringify(originalSettings);
+    if (!hasChanges) {
+      newErrors.general = "Chưa có thay đổi nào";
+    }
 
     // Validate Numbers
     if (settings.late_time_limit < 0)
@@ -178,18 +208,53 @@ export default function BranchSettingsPage() {
 
     setIsSaving(true);
     try {
-      // In a real app, we might only send changed fields.
-      // For mock, we send the whole object or just the relevant subset.
-      const payload: UpdateBranchSettingsPayload = {
-        ...settings,
+      // Use real API for core business configuration (fields in sp_config_branch)
+      const configDto: ConfigBranchDto = {
+        lateTimeLimit: settings.late_time_limit,
+        maxCourtsPerUser: settings.max_courts_per_day_per_user,
+        loyaltyPointRate: settings.loyalty_point_rate,
+        cancelFeeBefore24h: settings.cancel_fee_before_24h_percent,
+        cancelFeeWithin24h: settings.cancel_fee_within_24h_percent,
+        noShowFee: settings.no_show_fee_percent,
+        nightCharge: settings.night_booking_additional_charge,
+        holidayCharge: settings.holiday_booking_additional_charge,
+        weekendCharge: settings.weekend_booking_additional_charge,
       };
 
-      await updateBranchSettings(parseInt(selectedBranchId), payload);
-      setOriginalSettings(settings); // Update snapshot
-      toast.success(groupName ? `Đã lưu ${groupName}` : "Đã lưu cấu hình");
-    } catch (error) {
+      const result = await configBranch(configDto);
+      
+      // Check for warnings or errors from stored procedure
+      if (result && result.length > 0) {
+        const response = result[0];
+        if (response.Success === 1) {
+          setOriginalSettings(settings);
+          const successMessage = groupName ? `Đã lưu ${groupName}` : "Đã lưu cấu hình";
+          
+          // Show warnings if any
+          if (response.Warnings && response.Warnings.trim()) {
+            toast.success(successMessage);
+            toast.warning(response.Warnings, { duration: 5000 });
+          } else {
+            toast.success(successMessage);
+          }
+          
+          // Show updated fields if available
+          if (response.UpdatedFields && response.UpdatedFields.trim()) {
+            logger.info("Updated fields:", response.UpdatedFields);
+          }
+        } else {
+          toast.error(response.Message || "Lưu thất bại");
+        }
+      } else {
+        setOriginalSettings(settings);
+        toast.success(groupName ? `Đã lưu ${groupName}` : "Đã lưu cấu hình");
+      }
+    } catch (error: unknown) {
       logger.error("Save failed", error);
-      toast.error("Lưu thất bại");
+      const errorMessage =
+        (error as { response?: { data?: { message?: string } } })?.response?.data
+          ?.message || "Lưu thất bại";
+      toast.error(errorMessage);
     } finally {
       setIsSaving(false);
     }
@@ -477,7 +542,9 @@ export default function BranchSettingsPage() {
                   <div className="flex items-center justify-between">
                     <Label htmlFor={field.id}>{field.label}</Label>
                     <span className="text-xs font-medium text-slate-500">
-                      {formatCurrency((settings as any)[field.id])}
+                      {formatCurrency(
+                        settings[field.id as keyof BranchConfigSettings] as number
+                      )}
                     </span>
                   </div>
                   <div className="relative">
@@ -486,10 +553,10 @@ export default function BranchSettingsPage() {
                       type="number"
                       min="0"
                       step="1000"
-                      value={(settings as any)[field.id]}
+                      value={settings[field.id as keyof BranchConfigSettings] as number}
                       onChange={(e) =>
                         handleFieldChange(
-                          field.id as keyof BranchSettings,
+                          field.id,
                           parseFloat(e.target.value) || 0
                         )
                       }
