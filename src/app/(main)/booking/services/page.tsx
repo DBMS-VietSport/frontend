@@ -64,8 +64,9 @@ export default function ServicesPage() {
   const customerIdFromQuery = searchParams.get("customerId");
 
   // Local state for customer and booking selection
+  // For non-receptionists, automatically use their own customer ID
   const [localCustomerId, setLocalCustomerId] = React.useState<string | null>(
-    customerIdFromQuery || selectedCustomerId
+    customerIdFromQuery || selectedCustomerId || (!isReceptionist && user?.customerId ? user.customerId.toString() : null)
   );
   const [localBookingId, setLocalBookingId] = React.useState<string | null>(
     bookingIdFromQuery || selectedCourtBookingId
@@ -308,6 +309,14 @@ export default function ServicesPage() {
     },
     []
   );
+
+  // Auto-set customer ID for non-receptionist users
+  React.useEffect(() => {
+    if (!isReceptionist && user?.customerId && !localCustomerId) {
+      setLocalCustomerId(user.customerId.toString());
+      setSelectedCustomerId(user.customerId.toString());
+    }
+  }, [user, isReceptionist, localCustomerId, setSelectedCustomerId]);
 
   // Handle customer change (receptionist only)
   const handleCustomerChange = React.useCallback(
