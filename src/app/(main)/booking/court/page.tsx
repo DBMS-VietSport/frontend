@@ -110,17 +110,31 @@ export default function BookingCourtPage() {
 
   // Reset selections when filters change
   React.useEffect(() => {
+    const localDateString = `${filters.date.getFullYear()}-${String(filters.date.getMonth() + 1).padStart(2, '0')}-${String(filters.date.getDate()).padStart(2, '0')}`;
+    console.log("Filters changed - resetting selections:", {
+      date: filters.date,
+      localDateString: localDateString,
+      courtTypeId: filters.courtTypeId,
+      facilityId: filters.facilityId
+    });
     setSelectedCourt(null);
     setSelectedSlots([]);
   }, [filters.courtTypeId, filters.facilityId, filters.date]);
 
   const handleFilterChange = React.useCallback((newFilters: any) => {
-    // If date is a string, convert it to a Date object
-    let processedFilters = { ...newFilters };
-    if (processedFilters.date && typeof processedFilters.date === "string") {
-      processedFilters.date = new Date(processedFilters.date);
-    }
-    setFilters(processedFilters);
+    setFilters((prevFilters) => {
+      // If date is a string, convert it to a Date object
+      let processedFilters = { ...newFilters };
+      if (processedFilters.date && typeof processedFilters.date === "string") {
+        processedFilters.date = new Date(processedFilters.date);
+      }
+      console.log("Filter changed:", { 
+        old: prevFilters.date, 
+        new: processedFilters.date,
+        dateString: processedFilters.date instanceof Date ? processedFilters.date.toISOString().split('T')[0] : 'not a date'
+      });
+      return processedFilters;
+    });
   }, []);
 
   const handleCourtSelect = React.useCallback((court: Court) => {
@@ -165,19 +179,32 @@ export default function BookingCourtPage() {
     }
 
     // Prepare API request
+    // Use local date format instead of UTC to avoid timezone issues
+    const year = filters.date.getFullYear();
+    const month = String(filters.date.getMonth() + 1).padStart(2, '0');
+    const day = String(filters.date.getDate()).padStart(2, '0');
+    const bookingDate = `${year}-${month}-${day}`;
+    
+    console.log("=== BOOKING CREATION ===");
+    console.log("Current filters.date:", filters.date);
+    console.log("Booking date string (local):", bookingDate);
+    console.log("Selected slots:", selectedSlots);
+    
     const bookingRequest = {
       creator: isReceptionist ? user?.employeeId : undefined,
       customerId: customer.id,
       courtId: parseInt(selectedCourt.id.toString()),
-      bookingDate: filters.date.toISOString().split('T')[0], // YYYY-MM-DD format
+      bookingDate: bookingDate,
       slots: JSON.stringify(selectedSlots.map((s) => ({
-        start_time: `${filters.date.toISOString().split('T')[0]}T${s.start}:00`,
-        end_time: `${filters.date.toISOString().split('T')[0]}T${s.end}:00`,
+        start_time: `${bookingDate}T${s.start}:00`,
+        end_time: `${bookingDate}T${s.end}:00`,
       }))),
       byMonth: false,
       branchId: parseInt(filters.facilityId),
       type: isReceptionist ? "Trực tiếp" : "Online",
     };
+    
+    console.log("Booking request payload:", bookingRequest);
 
     try {
       const response = await createCourtBookingMutation.mutateAsync(bookingRequest);
@@ -265,19 +292,32 @@ export default function BookingCourtPage() {
     }
 
     // Prepare API request
+    // Use local date format instead of UTC to avoid timezone issues
+    const year = filters.date.getFullYear();
+    const month = String(filters.date.getMonth() + 1).padStart(2, '0');
+    const day = String(filters.date.getDate()).padStart(2, '0');
+    const bookingDate = `${year}-${month}-${day}`;
+    
+    console.log("=== BOOKING CREATION (CLONE) ===");
+    console.log("Current filters.date:", filters.date);
+    console.log("Booking date string (local):", bookingDate);
+    console.log("Selected slots:", selectedSlots);
+    
     const bookingRequest = {
       creator: isReceptionist ? user?.employeeId : undefined,
       customerId: customer.id,
       courtId: parseInt(selectedCourt.id.toString()),
-      bookingDate: filters.date.toISOString().split('T')[0], // YYYY-MM-DD format
+      bookingDate: bookingDate,
       slots: JSON.stringify(selectedSlots.map((s) => ({
-        start_time: `${filters.date.toISOString().split('T')[0]}T${s.start}:00`,
-        end_time: `${filters.date.toISOString().split('T')[0]}T${s.end}:00`,
+        start_time: `${bookingDate}T${s.start}:00`,
+        end_time: `${bookingDate}T${s.end}:00`,
       }))),
       byMonth: false,
       branchId: parseInt(filters.facilityId),
       type: isReceptionist ? "Trực tiếp" : "Online",
     };
+    
+    console.log("Booking request payload (Clone):", bookingRequest);
 
     try {
       const response = await createCourtBookingCloneMutation.mutateAsync(bookingRequest);
